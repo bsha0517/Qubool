@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: qubool-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: qubool-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: qubool-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGIN
+        sync: false # set this to your Vercel frontend URL after it's deployed
+    # After the service is created, add the remaining vars from
+    # backend/.env.example (Twilio, AWS, KYC provider, etc.) in the Render
+    # dashboard — they're intentionally left out here since they're optional
+    # dev-fallback-friendly credentials, not required to boot the service.
+
+  - type: redis
+    name: qubool-redis
+    plan: starter
+    ipAllowList: []
+
+databases:
+  - name: qubool-postgres
+    plan: starter

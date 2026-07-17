@@ -53,6 +53,9 @@ docker compose down -v     # stop and wipe the database
 
 ## Going further
 
+- `DEPLOYMENT.md` — step-by-step guide to deploying the frontend on Vercel
+  and the backend on Railway or Render (the two need separate hosts —
+  see that file for why)
 - `backend/README.md` — full endpoint list, environment variables, and the
   "what still needs real vendor credentials before launch" list
 - `backend/COMPLIANCE_BRIEFING.md` — PECA 2016 / data residency questions to
