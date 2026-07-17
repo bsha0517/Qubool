@@ -1,0 +1,70 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: qubool-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: qubool
+      POSTGRES_PASSWORD: qubool
+      POSTGRES_DB: qubool
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qubool -d qubool"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: qubool-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: qubool-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./backend.env.docker
+    environment:
+      DATABASE_URL: "postgresql://qubool:qubool@postgres:5432/qubool"
+      REDIS_URL: "redis://redis:6379"
+      CORS_ORIGIN: "http://localhost:5173"
+    command: >
+      sh -c "npx prisma migrate deploy && npx prisma generate && node src/server.js"
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: qubool-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: "http://localhost:4000"
+
+volumes:
+  postgres_data:

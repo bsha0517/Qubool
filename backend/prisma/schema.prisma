@@ -1,0 +1,247 @@
+// Qubool — Database Schema
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Intention {
+  MARRIAGE
+  SERIOUS_RELATIONSHIP
+  FRIENDSHIP
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PHONE_VERIFIED
+  ID_PENDING
+  ID_VERIFIED
+  REJECTED
+}
+
+enum AdminRole {
+  NONE
+  MODERATOR
+  SUPER_ADMIN
+}
+
+enum MatchStatus {
+  PENDING   // one side liked, waiting on the other
+  MATCHED   // mutual like
+  PASSED    // one side passed
+  UNMATCHED // a match was later broken
+}
+
+enum ReportReason {
+  FAKE_PROFILE
+  HARASSMENT
+  INAPPROPRIATE_CONTENT
+  SCAM_OR_SOLICITATION
+  UNDERAGE
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  ACTIONED
+  DISMISSED
+}
+
+model User {
+  id                  String              @id @default(uuid())
+  phone               String              @unique
+  phoneVerified       Boolean             @default(false)
+  email               String?             @unique
+  passwordHash        String?
+  cnicHash            String?             // hashed CNIC, never store raw
+  verificationStatus  VerificationStatus  @default(UNVERIFIED)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  lastActiveAt        DateTime            @default(now())
+  isActive            Boolean             @default(true)
+  isBanned            Boolean             @default(false)
+  bannedReason         String?
+  adminRole           AdminRole           @default(NONE)
+
+  profile             Profile?
+  idVerification      IdVerification?
+  guardianLinks       GuardianLink[]      @relation("WardLinks")
+  guardianOf          GuardianLink[]      @relation("GuardianLinks")
+
+  sentLikes           MatchAction[]       @relation("ActionByUser")
+  receivedLikes       MatchAction[]       @relation("ActionOnUser")
+
+  matchesAsUserA      Match[]             @relation("UserA")
+  matchesAsUserB      Match[]             @relation("UserB")
+
+  messagesSent        Message[]           @relation("MessageSender")
+
+  reportsFiled        Report[]            @relation("ReportedBy")
+  reportsAgainst      Report[]            @relation("ReportedUser")
+
+  otpCodes            OtpCode[]
+
+  @@index([phone])
+}
+
+model Profile {
+  id                String     @id @default(uuid())
+  user              User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String     @unique
+
+  name              String
+  age               Int
+  gender            Gender
+  city              String
+  intention         Intention
+  sect              String?
+  religiosityLevel  String?    // e.g. "practicing", "moderate", "cultural" — optional, user-set
+  education         String?
+  profession        String?
+  familyBackground  String?    // optional, hideable field (caste/biradari) - never required
+  bio               String?    @db.VarChar(500)
+
+  blurPhotosDefault Boolean    @default(true)
+  guardianModeOn    Boolean    @default(false)
+  showFamilyBackground Boolean @default(false)
+
+  photos            Photo[]
+
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@index([city])
+  @@index([intention])
+}
+
+model Photo {
+  id         String   @id @default(uuid())
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId  String
+  url        String
+  order      Int      @default(0)
+  isPrimary  Boolean  @default(false)
+  moderationStatus String @default("PENDING") // PENDING | PASSED | REJECTED
+  moderationReason String?
+  createdAt  DateTime @default(now())
+}
+
+// A guardian is a linked family member who can optionally view match
+// notifications / chat existence for a ward, only when the ward opts in.
+model GuardianLink {
+  id            String   @id @default(uuid())
+  ward          User     @relation("WardLinks", fields: [wardId], references: [id])
+  wardId        String
+  guardian      User     @relation("GuardianLinks", fields: [guardianId], references: [id])
+  guardianId    String
+  approvedByWard Boolean @default(false)
+  createdAt     DateTime @default(now())
+  revokedAt     DateTime?
+
+  @@unique([wardId, guardianId])
+}
+
+// One row per swipe/decision. Two MatchAction rows (A->B, B->A) get
+// reconciled into a Match when both are LIKE.
+model MatchAction {
+  id            String   @id @default(uuid())
+  actor         User     @relation("ActionByUser", fields: [actorId], references: [id])
+  actorId       String
+  target        User     @relation("ActionOnUser", fields: [targetId], references: [id])
+  targetId      String
+  action        String   // "LIKE" | "PASS"
+  createdAt     DateTime @default(now())
+
+  @@unique([actorId, targetId])
+  @@index([targetId])
+}
+
+model Match {
+  id          String       @id @default(uuid())
+  userA       User         @relation("UserA", fields: [userAId], references: [id])
+  userAId     String
+  userB       User         @relation("UserB", fields: [userBId], references: [id])
+  userBId     String
+  status      MatchStatus  @default(MATCHED)
+  matchedAt   DateTime     @default(now())
+  unmatchedAt DateTime?
+  mediaUnlockedAt DateTime? // when photo/video sharing unlocks in chat
+
+  messages    Message[]
+
+  @@unique([userAId, userBId])
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  match       Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  matchId     String
+  sender      User     @relation("MessageSender", fields: [senderId], references: [id])
+  senderId    String
+  body        String   @db.VarChar(2000)
+  flaggedByAi Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  readAt      DateTime?
+
+  @@index([matchId, createdAt])
+}
+
+model Report {
+  id           String        @id @default(uuid())
+  reportedBy   User          @relation("ReportedBy", fields: [reportedById], references: [id])
+  reportedById String
+  reportedUser User          @relation("ReportedUser", fields: [reportedUserId], references: [id])
+  reportedUserId String
+  reason       ReportReason
+  details      String?       @db.VarChar(1000)
+  status       ReportStatus  @default(OPEN)
+  createdAt    DateTime      @default(now())
+  resolvedAt   DateTime?
+  moderatorNote String?
+
+  @@index([status])
+}
+
+// Tracks a single CNIC + liveness verification attempt via a third-party
+// KYC provider. We NEVER store the raw CNIC number — only a salted hash
+// (for duplicate-account detection) plus whatever reference ID the
+// provider gives us to look up the result on their side.
+model IdVerification {
+  id               String    @id @default(uuid())
+  user             User      @relation(fields: [userId], references: [id])
+  userId           String    @unique
+  provider         String    // e.g. "onfido", "persona", "local-kyc-vendor"
+  providerRefId    String    // provider's case/check ID — used to fetch status, never guess it
+  cnicHash         String    // sha256(CNIC + pepper), for dedup only
+  status           String    @default("PENDING") // PENDING | PASSED | FAILED | EXPIRED
+  livenessPassed   Boolean   @default(false)
+  nameMatchScore   Float?    // similarity between CNIC name and profile name, if provider returns it
+  submittedAt      DateTime  @default(now())
+  decidedAt        DateTime?
+  rejectionReason  String?
+
+  @@index([status])
+}
+
+model OtpCode {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, expiresAt])
+}
