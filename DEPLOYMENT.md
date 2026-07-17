@@ -25,14 +25,25 @@ Deploy the databases first, then the backend, then the frontend.
    users (Singapore or Frankfurt are usually the closest options to
    Pakistan).
 3. Once it's provisioned: **Project Settings → Database → Connection string**.
-   Supabase shows two variants — use the **direct connection** (port
-   `5432`), not the "connection pooling" one (port `6543`). The pooled
-   connection uses PgBouncer in transaction mode, which doesn't support the
-   DDL locks Prisma's migration tool needs — migrations will fail silently
-   or error out against it. The direct connection string looks like:
-   ```
-   postgresql://postgres:[YOUR-PASSWORD]@db.xxxxx.supabase.co:5432/postgres
-   ```
+   Supabase shows three variants — use the **Session pooler** one, not the
+   other two:
+   - ❌ **Direct connection** (`db.xxxxx.supabase.co:5432`) — resolves over
+     IPv6 only by default. Render's (and most PaaS providers') outbound
+     network is IPv4-only, so this fails with `P1001: Can't reach database
+     server` — not because the database is down, but because the network
+     path doesn't exist.
+   - ❌ **Transaction pooler** (port `6543`) — supports IPv4, but runs
+     PgBouncer in transaction mode, which doesn't support the DDL locks
+     Prisma's migration tool needs. Migrations fail or silently do nothing
+     against it.
+   - ✅ **Session pooler** (still port `5432`, but a `pooler.supabase.com`
+     hostname instead of `db.xxxxx.supabase.co`) — supports IPv4 *and*
+     behaves like a direct connection for DDL purposes, so both migrations
+     and normal app queries work through it. This is the one to use. It
+     looks like:
+     ```
+     postgresql://postgres.xxxxx:[YOUR-PASSWORD]@aws-0-region.pooler.supabase.com:5432/postgres
+     ```
 4. Replace `[YOUR-PASSWORD]` with the password from step 2. This is your `DATABASE_URL`.
 5. **Creating the tables** — you have two options, and only need to do one:
    - **Automatic (default)**: do nothing here. `backend/Dockerfile` runs

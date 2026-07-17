@@ -69,6 +69,17 @@ already applied in this codebase.
    installed explicitly via `apt-get` — Prisma supports Debian's OpenSSL
    setup much more reliably than Alpine's.
 
+8. **Supabase's direct connection string is IPv6-only, breaking deploys on
+   IPv4-only hosts.** After fixing #7, migrations still failed with
+   `P1001: Can't reach database server at db.xxxxx.supabase.co:5432` — not
+   because the database was down, but because Supabase's direct-connection
+   hostname resolves over IPv6 only by default, and Render's (and most
+   PaaS providers') outbound networking is IPv4-only. Documented the fix in
+   `DEPLOYMENT.md`: use Supabase's **Session pooler** connection string
+   instead (still port `5432`, but a `pooler.supabase.com` host that
+   resolves over IPv4 and still supports the DDL Prisma's migrations need,
+   unlike the transaction-mode pooler on port `6543`).
+
 ## Noted but not changed (design tradeoffs, not bugs)
 
 - **`GuardianInvite`'s "invited this session" list** only tracks invites
