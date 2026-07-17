@@ -50,10 +50,23 @@ Then set `DATABASE_URL="postgresql://postgres:postgres@localhost:5432/qubool"` i
 
 ## 2. Create the database schema
 
+A migration already exists at `prisma/migrations/20260101000000_init/` (hand-written
+to match `schema.prisma` — see the note at the top of that file). Apply it:
+
 ```bash
-npx prisma migrate dev --name init
+npx prisma migrate deploy
 npx prisma generate
 ```
+
+If you ever change `schema.prisma` going forward, generate a new migration
+the normal way instead of hand-editing SQL:
+
+```bash
+npx prisma migrate dev --name <describe-the-change>
+```
+
+This diffs your schema against the existing migration and only creates a
+new one for whatever changed.
 
 ## 3. (Optional) seed sample profiles
 

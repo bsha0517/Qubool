@@ -25,11 +25,39 @@ Deploy the databases first, then the backend, then the frontend.
    users (Singapore or Frankfurt are usually the closest options to
    Pakistan).
 3. Once it's provisioned: **Project Settings → Database → Connection string**.
-   Copy the **URI** format connection string. It looks like:
+   Supabase shows two variants — use the **direct connection** (port
+   `5432`), not the "connection pooling" one (port `6543`). The pooled
+   connection uses PgBouncer in transaction mode, which doesn't support the
+   DDL locks Prisma's migration tool needs — migrations will fail silently
+   or error out against it. The direct connection string looks like:
    ```
-   postgresql://postgres.xxxxx:[YOUR-PASSWORD]@aws-0-region.pooler.supabase.com:6543/postgres
+   postgresql://postgres:[YOUR-PASSWORD]@db.xxxxx.supabase.co:5432/postgres
    ```
 4. Replace `[YOUR-PASSWORD]` with the password from step 2. This is your `DATABASE_URL`.
+5. **Creating the tables** — you have two options, and only need to do one:
+   - **Automatic (default)**: do nothing here. `backend/Dockerfile` runs
+     `npx prisma migrate deploy` on every boot, which applies
+     `backend/prisma/migrations/20260101000000_init/migration.sql`
+     automatically the first time it connects. This is what happens when
+     you deploy to Render in step 3.
+   - **Manual**: if you'd rather see the tables appear before deploying
+     anything, or the automatic path ever fails, open Supabase's
+     **SQL Editor** and paste in the full contents of
+     `backend/prisma/migrations/20260101000000_init/migration.sql`, then
+     run it. It creates every enum, table, index, and foreign key the app
+     needs. (If you do this manually, `prisma migrate deploy` will still
+     run fine afterward on next boot — it checks what's already applied
+     and does nothing if it's already up to date, as long as you also
+     create the tracking table Prisma expects; see the note below.)
+
+   > **Note on mixing manual + automatic**: if you run the SQL manually
+   > first, Prisma won't know it's "already applied" unless its internal
+   > `_prisma_migrations` tracking table also has a matching row. Easiest
+   > path: just let the automatic option run once (deploy to Render, let
+   > the Dockerfile's `migrate deploy` create everything, including that
+   > tracking table) rather than running the SQL by hand — the manual
+   > option above is mainly useful for *inspecting* what will be created,
+   > or for pasting into a database client to review structure ahead of time.
 
 ## 2. Set up Redis (Upstash, free, no card)
 
