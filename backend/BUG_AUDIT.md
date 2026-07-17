@@ -80,6 +80,12 @@ already applied in this codebase.
    resolves over IPv4 and still supports the DDL Prisma's migrations need,
    unlike the transaction-mode pooler on port `6543`).
 
+9. **`rate-limit-redis` imported incorrectly.** `app.js` did
+   `const RedisStore = require("rate-limit-redis")` (default import), but
+   v4 of that package only exports `RedisStore` as a **named** export —
+   crashed the whole process on boot with `TypeError: RedisStore is not a
+   constructor`. Fixed to `const { RedisStore } = require("rate-limit-redis")`.
+
 ## Noted but not changed (design tradeoffs, not bugs)
 
 - **`GuardianInvite`'s "invited this session" list** only tracks invites

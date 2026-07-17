@@ -8,7 +8,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const RedisStore = require("rate-limit-redis");
+const { RedisStore } = require("rate-limit-redis");
 const redis = require("./config/redis");
 
 const authRoutes = require("./routes/auth");
