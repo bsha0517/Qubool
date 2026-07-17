@@ -1,6 +1,14 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
+
+# Prisma's query/schema engine binaries need a real OpenSSL present to
+# detect the right version at generate-time and runtime. node:20-alpine
+# (musl libc, minimal OpenSSL) causes the engine to crash with a
+# non-JSON "Error load..." response instead of starting — switching to
+# a Debian-based slim image and installing OpenSSL explicitly avoids
+# that entirely rather than trying to patch around it.
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json* ./
 RUN npm install --omit=dev && npm install prisma --no-save

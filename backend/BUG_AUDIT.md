@@ -57,6 +57,18 @@ already applied in this codebase.
    external HTTP API. Fixed to generate a signed GET URL for private objects
    instead.
 
+7. **Prisma's engine crashed on Alpine at deploy time** (surfaced on Render
+   as `Could not parse schema engine response: SyntaxError: Unexpected
+   token 'E', "Error load"... is not valid JSON`, preceded by repeated
+   `Prisma failed to detect the libssl/openssl version` warnings). Alpine's
+   musl libc + minimal OpenSSL isn't reliably detected by Prisma's engine
+   binaries — the engine crashes on startup and prints a plain-text error
+   instead of the JSON Prisma expects, which then fails to parse and looks
+   like a totally unrelated error. Fixed by switching `backend/Dockerfile`
+   from `node:20-alpine` to `node:20-slim` (Debian-based) with `openssl`
+   installed explicitly via `apt-get` — Prisma supports Debian's OpenSSL
+   setup much more reliably than Alpine's.
+
 ## Noted but not changed (design tradeoffs, not bugs)
 
 - **`GuardianInvite`'s "invited this session" list** only tracks invites
