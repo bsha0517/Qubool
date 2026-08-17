@@ -29,7 +29,8 @@ accounts (Twilio, AWS) are required to try the app locally:
 - OTP codes are logged to the `dosti-api` container's logs instead of being texted
 - Chat moderation runs on the local regex pre-filter only
 
-To seed a few sample profiles once it's running:
+To seed sample profiles once it's running (12 demo profiles with photos,
+spread across cities and both Dating/Friendship):
 
 ```bash
 docker compose exec api npm run seed
@@ -38,10 +39,14 @@ docker compose exec api npm run seed
 ## Trying it out
 
 1. Open http://localhost:5173
-2. Enter a Pakistani-format number, e.g. `+923001234567`
+2. Enter a Pakistani-format number, e.g. `+923001234567`, and complete onboarding
 3. Check the OTP in the logs: `docker compose logs api | grep OTP`
-4. Enter the code, complete onboarding, and you'll land on the discover screen
-5. Run the seed command above first if you want other profiles to browse
+4. Run the seed command above (if you haven't) — you'll now see demo profiles in Discover
+5. **To actually get a match** (not just see profiles): matches need mutual likes, and the seed profiles are static — they won't like you back on their own. Re-run the seed command with your phone number so they do:
+   ```bash
+   docker compose exec -e AUTO_LIKE_PHONE=+923001234567 api npm run seed
+   ```
+   (swap in whatever number you signed up with — or `AUTO_LIKE_EMAIL=you@example.com` if you used email signup instead). Now swiping right on any seed profile matches instantly, so you can try the Matches tab and chat.
 
 ## Stopping / resetting
 

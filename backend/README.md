@@ -23,10 +23,19 @@ Dev fallbacks (console-logged OTP, regex-only chat moderation) are active
 out of the box via `.env.docker` — no external vendor credentials required
 to try it locally.
 
-To seed sample profiles once it's running:
+To seed sample profiles once it's running (12 demo profiles with photos):
 
 ```bash
 docker compose exec api npm run seed
+```
+
+Since matches require mutual likes and seed profiles are static, they won't
+like you back on their own — re-run with your own phone/email to make them
+do so, so swiping right on one produces a real match to test chat with:
+
+```bash
+docker compose exec -e AUTO_LIKE_PHONE=+923001234567 api npm run seed
+# or: docker compose exec -e AUTO_LIKE_EMAIL=you@example.com api npm run seed
 ```
 
 To stop everything (keeping data): `docker compose stop`
@@ -72,6 +81,14 @@ new one for whatever changed.
 
 ```bash
 npm run seed
+```
+
+Adds 12 demo profiles with photos. To make them like you back (needed for
+an actual match, since matches require mutual likes and these are static
+accounts), re-run with your own phone/email:
+
+```bash
+AUTO_LIKE_PHONE=+923001234567 npm run seed
 ```
 
 ## 4. Run the server

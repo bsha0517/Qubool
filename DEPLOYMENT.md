@@ -105,7 +105,10 @@ Deploy the databases first, then the backend, then the frontend.
 6. Once it's live, copy the public URL Render gives you (something like
    `https://dosti-api.onrender.com`) — you'll need it for the frontend.
 7. (Optional) Seed sample profiles once: **Shell** tab on the Render
-   service → `npm run seed`.
+   service → `npm run seed`. Re-run with `AUTO_LIKE_PHONE=<your phone> npm run seed`
+   afterward (once you've signed up in the app) so the seed profiles like
+   you back — matches need mutual likes, and static seed accounts can't
+   reciprocate on their own otherwise.
 
 ### Note on Render's free tier
 
