@@ -60,7 +60,7 @@ function ErrorBanner({ message }) {
 
 /* ---------- Onboarding screens ---------- */
 
-function Welcome({ onNext }) {
+function Welcome({ onChoose }) {
   return (
     <div style={{ padding: "60px 28px 40px", textAlign: "center", minHeight: 560, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
       <div>
@@ -70,7 +70,10 @@ function Welcome({ onNext }) {
           A simple, honest way to meet people near you — swipe, match, chat.
         </p>
       </div>
-      <Button onClick={onNext}>Get started</Button>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <Button onClick={() => onChoose("phone")}>Continue with phone</Button>
+        <Button onClick={() => onChoose("email")} variant="outline">Continue with email</Button>
+      </div>
     </div>
   );
 }
@@ -101,7 +104,7 @@ function PhoneVerify({ onVerified }) {
     try {
       const result = await api.verifyOtp(phone, code);
       setToken(result.token);
-      onVerified();
+      onVerified(result.hasProfile);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -138,6 +141,64 @@ function PhoneVerify({ onVerified }) {
             </div>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+function EmailAuth({ onVerified }) {
+  const [mode, setMode] = useState("signup"); // signup | login
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const result = mode === "signup" ? await api.emailSignup(email, password) : await api.emailLogin(email, password);
+      setToken(result.token);
+      onVerified(result.hasProfile);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validPassword = password.length >= 8;
+
+  return (
+    <div>
+      <TopBar title={mode === "signup" ? "Create your account" : "Log in"} />
+      <div style={{ padding: 24 }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 18, background: "#F0EAD6", borderRadius: 10, padding: 4 }}>
+          {["signup", "login"].map((m) => (
+            <div
+              key={m}
+              onClick={() => { setMode(m); setError(""); }}
+              style={{
+                flex: 1, textAlign: "center", padding: "8px 0", borderRadius: 8, cursor: "pointer",
+                fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+                background: mode === m ? "#fff" : "transparent", color: mode === m ? "#0F3D3E" : "#8A8375",
+              }}
+            >
+              {m === "signup" ? "Sign up" : "Log in"}
+            </div>
+          ))}
+        </div>
+        <ErrorBanner message={error} />
+        <label style={labelStyle}>Email</label>
+        <input style={inputStyle} type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <label style={labelStyle}>Password</label>
+        <input style={inputStyle} type="password" placeholder={mode === "signup" ? "At least 8 characters" : "Your password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && validEmail && validPassword && submit()} />
+        <div style={{ marginTop: 18 }}>
+          <Button onClick={submit} disabled={loading || !validEmail || !validPassword}>
+            {loading ? "Please wait..." : mode === "signup" ? "Create account" : "Log in"}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -517,6 +578,7 @@ function TabButton({ active, onClick, icon, label }) {
 
 export default function App() {
   const [step, setStep] = useState(getToken() ? "checking" : "welcome");
+  const [authMode, setAuthMode] = useState("phone"); // "phone" | "email" — which verify screen onboardSub 0 shows
   const [onboardSub, setOnboardSub] = useState(0);
   const [tab, setTab] = useState("discover");
   const [activeChat, setActiveChat] = useState(null);
@@ -534,6 +596,17 @@ export default function App() {
 
   useEffect(() => () => disconnectSocket(), []);
 
+  // Called after phone OTP or email signup/login succeeds. A returning
+  // user who already has a profile (most likely via "Log in") skips
+  // onboarding entirely instead of being walked through it again.
+  const handleVerified = (hasProfile) => {
+    if (hasProfile) {
+      setStep("app");
+    } else {
+      setOnboardSub(1);
+    }
+  };
+
   const shellStyle = { maxWidth: 400, margin: "0 auto", minHeight: 640, background: "#F7F3EA", borderRadius: 20, boxShadow: "0 8px 40px rgba(15,61,62,0.15)", overflow: "hidden", fontFamily: "'Inter', sans-serif", position: "relative" };
 
   if (step === "checking") {
@@ -541,14 +614,20 @@ export default function App() {
   }
 
   if (step === "welcome") {
-    return <div style={shellStyle}><style>{FONT_IMPORT}</style><Welcome onNext={() => setStep("onboarding")} /></div>;
+    return (
+      <div style={shellStyle}>
+        <style>{FONT_IMPORT}</style>
+        <Welcome onChoose={(mode) => { setAuthMode(mode); setStep("onboarding"); }} />
+      </div>
+    );
   }
 
   if (step === "onboarding") {
     return (
       <div style={shellStyle}>
         <style>{FONT_IMPORT}</style>
-        {onboardSub === 0 && <PhoneVerify onVerified={() => setOnboardSub(1)} />}
+        {onboardSub === 0 && authMode === "phone" && <PhoneVerify onVerified={handleVerified} />}
+        {onboardSub === 0 && authMode === "email" && <EmailAuth onVerified={handleVerified} />}
         {onboardSub === 1 && <IntentionSelect onNext={() => setOnboardSub(2)} draft={draft} setDraft={setDraft} />}
         {onboardSub === 2 && <PrivacySetup onNext={() => setOnboardSub(3)} draft={draft} setDraft={setDraft} />}
         {onboardSub === 3 && <ProfileSetup onNext={() => setOnboardSub(4)} draft={draft} setDraft={setDraft} />}

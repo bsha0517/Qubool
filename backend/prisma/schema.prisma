@@ -56,9 +56,10 @@ enum ReportStatus {
 
 model User {
   id                  String              @id @default(uuid())
-  phone               String              @unique
+  phone               String?             @unique
   phoneVerified       Boolean             @default(false)
   email               String?             @unique
+  emailVerified       Boolean             @default(false)
   passwordHash        String?
   verificationStatus  VerificationStatus  @default(UNVERIFIED)
   createdAt           DateTime            @default(now())
@@ -84,7 +85,12 @@ model User {
 
   otpCodes            OtpCode[]
 
+  // Accounts can exist via phone+OTP, email+password, or (over time) both —
+  // `phone` and `email` are each optional and each independently unique,
+  // but at least one must be set (enforced in application code, not the DB,
+  // since Prisma/Postgres don't have a clean native "at least one of" check).
   @@index([phone])
+  @@index([email])
 }
 
 model Profile {

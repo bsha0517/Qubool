@@ -59,10 +59,21 @@ function createApp(io) {
     message: { error: "Too many OTP requests — try again later" },
     store: redisStore("rl:otp:"),
   });
+  // Tighter limit on password-based auth specifically — the general 300/15min
+  // limit alone isn't tight enough to meaningfully slow down password
+  // guessing against a single account.
+  const passwordAuthLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: "Too many attempts — try again later" },
+    store: redisStore("rl:pwauth:"),
+  });
 
   app.get("/health", (req, res) => res.json({ status: "ok" }));
 
   app.use("/auth/otp", otpLimiter);
+  app.use("/auth/login", passwordAuthLimiter);
+  app.use("/auth/signup", passwordAuthLimiter);
   app.use("/auth", authRoutes);
   app.use("/profile", profileRoutes);
   app.use("/discover", discoverRoutes);

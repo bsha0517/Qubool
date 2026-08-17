@@ -84,11 +84,27 @@ npm start
 
 Server runs on `http://localhost:4000`. Check `GET /health`.
 
-## Auth flow (no passwords)
+## Auth flow
 
+Two independent ways to get an account — a user can have a phone, an email
++ password, or both:
+
+**Phone (OTP, no password):**
 1. `POST /auth/otp/request` `{ phone: "+923001234567" }` → sends a 6-digit code (logged to console in dev, since no SMS provider is wired up yet)
-2. `POST /auth/otp/verify` `{ phone, code }` → returns a JWT
-3. Send `Authorization: Bearer <token>` on all subsequent requests
+2. `POST /auth/otp/verify` `{ phone, code }` → returns a JWT (also works as "login" for a returning phone user — same endpoint)
+
+**Email + password:**
+1. `POST /auth/signup` `{ email, password }` → creates the account, returns a JWT
+2. `POST /auth/login` `{ email, password }` → returns a JWT for a returning user
+
+Either way: send `Authorization: Bearer <token>` on all subsequent requests.
+
+Note: email/password accounts skip phone verification, so anything gated
+specifically on `PHONE_VERIFIED` (see `middleware/auth.js`'s
+`requireVerification`) won't apply to them. Actions that just need "not an
+anonymous/unverified account" (like sending messages) use the broader
+`requireVerifiedAccount` instead, which accepts either phone OTP or
+email+password as sufficient.
 
 ## Key endpoints
 
@@ -96,6 +112,8 @@ Server runs on `http://localhost:4000`. Check `GET /health`.
 |---|---|---|
 | POST | `/auth/otp/request` | Send OTP |
 | POST | `/auth/otp/verify` | Verify OTP, get JWT |
+| POST | `/auth/signup` | Create account with email + password |
+| POST | `/auth/login` | Log in with email + password |
 | POST | `/profile` | Create profile |
 | PATCH | `/profile` | Update profile |
 | GET | `/profile/me` | Get own profile |

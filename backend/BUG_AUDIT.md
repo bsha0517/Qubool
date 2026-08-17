@@ -127,6 +127,16 @@ already applied in this codebase.
     edge — that setting also fixes rate-limiting's client-IP detection,
     which had the same underlying blind spot.
 
+## Fixed while adding email/password auth
+
+12. **`POST /auth/otp/verify` always returned `hasProfile: false`, even for
+    returning users who already had a completed profile.** The frontend's
+    initial-load check (`GET /profile/me` on token presence) papered over
+    this on page refresh, but a user who verified their phone again mid-session
+    (e.g. re-logging-in) got forced back through onboarding every time. Fixed
+    to actually check for an existing profile and return the real value —
+    same fix applied to the new `/auth/login` endpoint from the start.
+
 ## Noted but not changed (design tradeoffs, not bugs)
 
 - **`GuardianInvite`'s "invited this session" list** only tracks invites
@@ -146,3 +156,9 @@ already applied in this codebase.
   their own match room). Functionally fine, but worth knowing the message
   appears via a round trip rather than instantly. Not fixed since it works
   correctly, just noting the comment overstated what the code does.
+- **Email/password accounts have no email verification link.** Signup only
+  confirms someone knows a valid-looking email format + chose a password —
+  it doesn't confirm they control that inbox. `emailVerified` exists on the
+  `User` model for exactly this future addition, currently always `false`.
+  Not a bug — just not built yet, since it needs a real email-sending
+  provider wired up (parallel to how `sms.js` wraps Twilio).

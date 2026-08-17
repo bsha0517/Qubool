@@ -83,16 +83,59 @@ router.post("/otp/verify", async (req, res) => {
   ]);
 
   const token = signToken(user);
-  res.json({ token, userId: user.id, hasProfile: false });
+  const hasProfile = !!(await prisma.profile.findUnique({ where: { userId: user.id } }));
+  res.json({ token, userId: user.id, hasProfile });
 });
 
-// --- POST /auth/login (returning users with completed profile) ---
-router.post("/login", async (req, res) => {
-  const parsed = requestOtpSchema.safeParse(req.body);
+// --- POST /auth/signup — email + password ---
+// Creates a new account. Unlike phone/OTP, this doesn't confirm the person
+// actually controls the email address (no verification link is sent — see
+// COMPLIANCE_BRIEFING.md / BUG_AUDIT.md if you add real email delivery
+// later and want to change that). `emailVerified` is tracked on the User
+// model for exactly that future addition; it stays false until then.
+const emailAuthSchema = z.object({
+  email: z.string().email("Enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+router.post("/signup", async (req, res) => {
+  const parsed = emailAuthSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
-  // Login re-uses the OTP flow — dating/matrimonial apps should not use
-  // static passwords as the primary factor given SIM-swap / account-takeover risk.
-  res.json({ message: "Use /auth/otp/request then /auth/otp/verify to log in" });
+  const { email, password } = parsed.data;
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) return res.status(409).json({ error: "An account with this email already exists — log in instead" });
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const user = await prisma.user.create({
+    data: { email, passwordHash, lastActiveAt: new Date() },
+  });
+
+  const token = signToken(user);
+  res.status(201).json({ token, userId: user.id, hasProfile: false });
+});
+
+// --- POST /auth/login — email + password ---
+router.post("/login", async (req, res) => {
+  const parsed = emailAuthSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
+  const { email, password } = parsed.data;
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  // Same generic error whether the email doesn't exist or the password is
+  // wrong — confirming which one it was lets an attacker enumerate
+  // registered emails.
+  if (!user || !user.passwordHash) return res.status(401).json({ error: "Incorrect email or password" });
+  if (user.isBanned) return res.status(403).json({ error: "Account suspended", reason: user.bannedReason });
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) return res.status(401).json({ error: "Incorrect email or password" });
+
+  await prisma.user.update({ where: { id: user.id }, data: { lastActiveAt: new Date() } });
+
+  const token = signToken(user);
+  const hasProfile = !!(await prisma.profile.findUnique({ where: { userId: user.id } }));
+  res.json({ token, userId: user.id, hasProfile });
 });
 
 module.exports = router;

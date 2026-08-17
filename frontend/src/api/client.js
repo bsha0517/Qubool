@@ -54,6 +54,8 @@ export const api = {
   // --- auth ---
   requestOtp: (phone) => request("/auth/otp/request", { method: "POST", body: { phone }, auth: false }),
   verifyOtp: (phone, code) => request("/auth/otp/verify", { method: "POST", body: { phone, code }, auth: false }),
+  emailSignup: (email, password) => request("/auth/signup", { method: "POST", body: { email, password }, auth: false }),
+  emailLogin: (email, password) => request("/auth/login", { method: "POST", body: { email, password }, auth: false }),
 
   // --- profile ---
   createProfile: (payload) => request("/profile", { method: "POST", body: payload }),

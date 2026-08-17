@@ -1,7 +1,7 @@
 const express = require("express");
 const { z } = require("zod");
 const prisma = require("../config/prisma");
-const { requireAuth, requireVerification } = require("../middleware/auth");
+const { requireAuth, requireVerifiedAccount } = require("../middleware/auth");
 const { screenMessage } = require("../utils/moderation");
 
 const router = express.Router();
@@ -59,11 +59,11 @@ router.get("/:matchId/messages", async (req, res) => {
 });
 
 // --- POST /matches/:matchId/messages — send a message ---
-// Requires phone verification, since anonymous unverified accounts
-// messaging real users is a common abuse vector on matrimonial apps.
+// Requires a verified account (phone OTP OR email+password), since
+// anonymous/unverified accounts messaging real users is a common abuse vector.
 const messageSchema = z.object({ body: z.string().min(1).max(2000) });
 
-router.post("/:matchId/messages", requireVerification("PHONE_VERIFIED"), async (req, res) => {
+router.post("/:matchId/messages", requireVerifiedAccount, async (req, res) => {
   const parsed = messageSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
 

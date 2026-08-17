@@ -19,9 +19,13 @@ const profileSchema = z.object({
   blurPhotosDefault: z.boolean().optional(),
 });
 
-// --- POST /profile — create profile (once, post-verification) ---
+// --- POST /profile — create profile (once account is confirmed real) ---
 router.post("/", async (req, res) => {
-  if (req.user.verificationStatus === "UNVERIFIED") {
+  // "Confirmed real" means either phone OTP was completed, or the account
+  // was created via email+password (having a password on file is itself a
+  // deliberate signup action, even without a confirmation-link email flow).
+  const hasVerifiedAccount = req.user.verificationStatus !== "UNVERIFIED" || !!req.user.passwordHash;
+  if (!hasVerifiedAccount) {
     return res.status(403).json({ error: "Verify your phone number before creating a profile" });
   }
   const existing = await prisma.profile.findUnique({ where: { userId: req.user.id } });
