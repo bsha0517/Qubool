@@ -62,6 +62,9 @@ export const api = {
   updateProfile: (payload) => request("/profile", { method: "PATCH", body: payload }),
   getMyProfile: () => request("/profile/me"),
   registerPhoto: (payload) => request("/profile/photos", { method: "POST", body: payload }),
+  deletePhoto: (photoId) => request(`/profile/photos/${photoId}`, { method: "DELETE" }),
+  reorderPhotos: (order) => request("/profile/photos/reorder", { method: "PATCH", body: { order } }),
+  savePrompts: (prompts) => request("/profile/prompts", { method: "PUT", body: { prompts } }),
 
   // --- uploads ---
   getSignedUploadUrl: (purpose, contentType) =>
@@ -69,7 +72,9 @@ export const api = {
 
   // --- discover / matching ---
   getDiscoverBatch: () => request("/discover"),
+  getLikesReceived: () => request("/discover/likes-received"),
   sendAction: (targetUserId, action) => request("/discover/action", { method: "POST", body: { targetUserId, action } }),
+  undoAction: (targetUserId) => request("/discover/undo", { method: "POST", body: { targetUserId } }),
 
   // --- matches / chat ---
   getMatches: () => request("/matches"),

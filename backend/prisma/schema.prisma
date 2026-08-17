@@ -20,6 +20,12 @@ enum Gender {
   FEMALE
 }
 
+enum GenderPreference {
+  MALE
+  FEMALE
+  ANY
+}
+
 enum VerificationStatus {
   UNVERIFIED
   PHONE_VERIFIED
@@ -109,13 +115,37 @@ model Profile {
 
   blurPhotosDefault Boolean    @default(true)
 
+  // --- Discovery filters (apply one-directionally: they narrow what THIS
+  // user sees, not who can see them) ---
+  preferredGender   GenderPreference @default(ANY)
+  ageMin            Int        @default(18)
+  ageMax            Int        @default(60)
+  sameCityOnly      Boolean    @default(false)
+
   photos            Photo[]
+  prompts           ProfilePrompt[]
 
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
   @@index([city])
   @@index([intention])
+}
+
+// Tinder-style conversation-starter prompts: a fixed question (from a
+// small curated list enforced client-side + zod, not a DB enum, so new
+// prompts can be added without a migration) plus the user's own answer.
+// Capped at 3 per profile at the application layer.
+model ProfilePrompt {
+  id         String   @id @default(uuid())
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId  String
+  question   String
+  answer     String   @db.VarChar(300)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([profileId])
 }
 
 model Photo {

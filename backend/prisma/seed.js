@@ -4,18 +4,18 @@ const prisma = new PrismaClient();
 // Unsplash photos are used directly (no upload/moderation pipeline needed
 // for seed data) and marked PASSED so they show up in Discover immediately.
 const SEED_USERS = [
-  { phone: "+923001111111", name: "Ayesha", age: 27, gender: "FEMALE", city: "Lahore", intention: "DATING", education: "MBA, LUMS", bio: "Loves calligraphy and long walks along the canal.", photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&h=800&fit=crop" },
-  { phone: "+923002222222", name: "Hamza", age: 30, gender: "MALE", city: "Karachi", intention: "DATING", education: "Software Engineer", bio: "Coffee enthusiast, cricket fan, always up for new food spots.", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&h=800&fit=crop" },
-  { phone: "+923003333333", name: "Zara", age: 25, gender: "FEMALE", city: "Islamabad", intention: "FRIENDSHIP", education: "Doctor", bio: "Book lover, hiking on weekends, looking to expand my circle.", photo: "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=600&h=800&fit=crop" },
-  { phone: "+923004444444", name: "Bilal", age: 29, gender: "MALE", city: "Lahore", intention: "DATING", education: "Architect", bio: "Design-obsessed, plays the tabla badly but enthusiastically.", photo: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=600&h=800&fit=crop" },
-  { phone: "+923005555555", name: "Sana", age: 26, gender: "FEMALE", city: "Karachi", intention: "DATING", education: "Marketing Manager", bio: "Beach mornings, terrible karaoke, good playlists.", photo: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=600&h=800&fit=crop" },
-  { phone: "+923006666666", name: "Usman", age: 28, gender: "MALE", city: "Islamabad", intention: "FRIENDSHIP", education: "Civil Engineer", bio: "New to the city, looking for people to explore trails with.", photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&h=800&fit=crop" },
-  { phone: "+923007777777", name: "Mahnoor", age: 24, gender: "FEMALE", city: "Faisalabad", intention: "FRIENDSHIP", education: "Graphic Designer", bio: "Sketchbook always in my bag. Let's talk about movies.", photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&h=800&fit=crop" },
-  { phone: "+923008888888", name: "Ahmed", age: 31, gender: "MALE", city: "Rawalpindi", intention: "DATING", education: "Product Manager", bio: "Weekend cyclist, occasional chef, full-time dog dad.", photo: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=600&h=800&fit=crop" },
-  { phone: "+923010101010", name: "Hira", age: 29, gender: "FEMALE", city: "Lahore", intention: "DATING", education: "Lawyer", bio: "Debate club alum. I will out-argue you about pineapple on pizza.", photo: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&h=800&fit=crop" },
-  { phone: "+923011111111", name: "Danish", age: 27, gender: "MALE", city: "Multan", intention: "DATING", education: "Entrepreneur", bio: "Building a small business, still finding time for cricket on Sundays.", photo: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=600&h=800&fit=crop" },
-  { phone: "+923012121212", name: "Alina", age: 23, gender: "FEMALE", city: "Peshawar", intention: "FRIENDSHIP", education: "Undergrad, Computer Science", bio: "New here, love board games and finding good chai spots.", photo: "https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?w=600&h=800&fit=crop" },
-  { phone: "+923013131313", name: "Fahad", age: 32, gender: "MALE", city: "Karachi", intention: "FRIENDSHIP", education: "Doctor", bio: "Long shifts, but always down for a late-night food run.", photo: "https://images.unsplash.com/photo-1618077360395-f3068be8e001?w=600&h=800&fit=crop" },
+  { phone: "+923001111111", name: "Ayesha", age: 27, gender: "FEMALE", city: "Lahore", intention: "DATING", education: "MBA, LUMS", bio: "Loves calligraphy and long walks along the canal.", photos: ["https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&h=800&fit=crop", "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&h=800&fit=crop"], prompts: [{ q: "The key to my heart is", a: "Fresh calligraphy ink and a good debate about Urdu poetry." }, { q: "My simple pleasures", a: "Canal-side chai at sunset." }] },
+  { phone: "+923002222222", name: "Hamza", age: 30, gender: "MALE", city: "Karachi", intention: "DATING", education: "Software Engineer", bio: "Coffee enthusiast, cricket fan, always up for new food spots.", photos: ["https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&h=800&fit=crop", "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=600&h=800&fit=crop"], prompts: [{ q: "Two truths and a lie", a: "I've watched every Test match this year. I make terrible karahi. I once met Babar Azam." }] },
+  { phone: "+923003333333", name: "Zara", age: 25, gender: "FEMALE", city: "Islamabad", intention: "FRIENDSHIP", education: "Doctor", bio: "Book lover, hiking on weekends, looking to expand my circle.", photos: ["https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=600&h=800&fit=crop"], prompts: [{ q: "Let's talk about", a: "Whatever you're reading right now." }, { q: "Best trail I've hiked", a: "Trail 3, Margalla Hills, at sunrise." }] },
+  { phone: "+923004444444", name: "Bilal", age: 29, gender: "MALE", city: "Lahore", intention: "DATING", education: "Architect", bio: "Design-obsessed, plays the tabla badly but enthusiastically.", photos: ["https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=600&h=800&fit=crop"], prompts: [{ q: "The first item on my bucket list", a: "Sketch every old building in the Walled City." }] },
+  { phone: "+923005555555", name: "Sana", age: 26, gender: "FEMALE", city: "Karachi", intention: "DATING", education: "Marketing Manager", bio: "Beach mornings, terrible karaoke, good playlists.", photos: ["https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=600&h=800&fit=crop"], prompts: [{ q: "My most controversial opinion", a: "Karaoke skill is overrated — confidence is everything." }] },
+  { phone: "+923006666666", name: "Usman", age: 28, gender: "MALE", city: "Islamabad", intention: "FRIENDSHIP", education: "Civil Engineer", bio: "New to the city, looking for people to explore trails with.", photos: ["https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&h=800&fit=crop"], prompts: [{ q: "Let's talk about", a: "Where to find the best trails around Islamabad." }] },
+  { phone: "+923007777777", name: "Mahnoor", age: 24, gender: "FEMALE", city: "Faisalabad", intention: "FRIENDSHIP", education: "Graphic Designer", bio: "Sketchbook always in my bag. Let's talk about movies.", photos: ["https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&h=800&fit=crop"], prompts: [{ q: "Two truths and a lie", a: "I've seen every Miyazaki film. I hate popcorn. I can draw with both hands." }] },
+  { phone: "+923008888888", name: "Ahmed", age: 31, gender: "MALE", city: "Rawalpindi", intention: "DATING", education: "Product Manager", bio: "Weekend cyclist, occasional chef, full-time dog dad.", photos: ["https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=600&h=800&fit=crop"], prompts: [{ q: "My simple pleasures", a: "A long ride, then a nap with my dog." }] },
+  { phone: "+923010101010", name: "Hira", age: 29, gender: "FEMALE", city: "Lahore", intention: "DATING", education: "Lawyer", bio: "Debate club alum. I will out-argue you about pineapple on pizza.", photos: ["https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&h=800&fit=crop"], prompts: [{ q: "My most controversial opinion", a: "Pineapple belongs on pizza. Fight me." }] },
+  { phone: "+923011111111", name: "Danish", age: 27, gender: "MALE", city: "Multan", intention: "DATING", education: "Entrepreneur", bio: "Building a small business, still finding time for cricket on Sundays.", photos: ["https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=600&h=800&fit=crop"], prompts: [{ q: "The first item on my bucket list", a: "Actually take a full weekend off." }] },
+  { phone: "+923012121212", name: "Alina", age: 23, gender: "FEMALE", city: "Peshawar", intention: "FRIENDSHIP", education: "Undergrad, Computer Science", bio: "New here, love board games and finding good chai spots.", photos: ["https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?w=600&h=800&fit=crop"], prompts: [{ q: "Let's talk about", a: "Board game recommendations, I'm building a collection." }] },
+  { phone: "+923013131313", name: "Fahad", age: 32, gender: "MALE", city: "Karachi", intention: "FRIENDSHIP", education: "Doctor", bio: "Long shifts, but always down for a late-night food run.", photos: ["https://images.unsplash.com/photo-1618077360395-f3068be8e001?w=600&h=800&fit=crop"], prompts: [{ q: "My simple pleasures", a: "Food at 2am after a long shift, no judgment." }] },
 ];
 
 async function main() {
@@ -58,18 +58,25 @@ async function main() {
 
     const existingPhoto = await prisma.photo.findFirst({ where: { profileId: profile.id } });
     if (!existingPhoto) {
-      await prisma.photo.create({
-        data: {
-          profileId: profile.id,
-          url: u.photo,
-          order: 0,
-          isPrimary: true,
-          moderationStatus: "PASSED",
-        },
-      });
+      await Promise.all(
+        u.photos.map((url, order) =>
+          prisma.photo.create({
+            data: { profileId: profile.id, url, order, isPrimary: order === 0, moderationStatus: "PASSED" },
+          })
+        )
+      );
+    }
+
+    const existingPrompt = await prisma.profilePrompt.findFirst({ where: { profileId: profile.id } });
+    if (!existingPrompt && u.prompts?.length) {
+      await Promise.all(
+        u.prompts.map((p, order) =>
+          prisma.profilePrompt.create({ data: { profileId: profile.id, question: p.q, answer: p.a, order } })
+        )
+      );
     }
   }
-  console.log(`Seeded ${SEED_USERS.length} demo profiles with photos.`);
+  console.log(`Seeded ${SEED_USERS.length} demo profiles with photos and prompts.`);
 
   // --- Optional: make every seed profile "like" a real account back, so
   // swiping right on any of them instantly produces a match — useful for

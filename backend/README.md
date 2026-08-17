@@ -135,8 +135,13 @@ email+password as sufficient.
 | PATCH | `/profile` | Update profile |
 | GET | `/profile/me` | Get own profile |
 | POST | `/profile/photos` | Attach a photo URL |
+| DELETE | `/profile/photos/:id` | Remove a photo |
+| PATCH | `/profile/photos/reorder` | Reorder photos (first = main photo) |
+| PUT | `/profile/prompts` | Replace profile prompts (max 3) |
 | GET | `/discover` | Today's curated match batch |
+| GET | `/discover/likes-received` | Who liked you, not yet responded to |
 | POST | `/discover/action` | Like or pass on a profile |
+| POST | `/discover/undo` | Undo the last like/pass |
 | GET | `/matches` | List active matches |
 | GET | `/matches/:id/messages` | Chat history |
 | POST | `/matches/:id/messages` | Send a message |

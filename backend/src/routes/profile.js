@@ -7,7 +7,7 @@ const { moderateImage } = require("../services/imageModeration");
 const router = express.Router();
 router.use(requireAuth);
 
-const profileSchema = z.object({
+const profileFields = z.object({
   name: z.string().min(2).max(60),
   age: z.number().int().min(18).max(80),
   gender: z.enum(["MALE", "FEMALE"]),
@@ -17,7 +17,18 @@ const profileSchema = z.object({
   profession: z.string().max(100).optional(),
   bio: z.string().max(500).optional(),
   blurPhotosDefault: z.boolean().optional(),
+  // --- discovery filters ---
+  preferredGender: z.enum(["MALE", "FEMALE", "ANY"]).optional(),
+  ageMin: z.number().int().min(18).max(80).optional(),
+  ageMax: z.number().int().min(18).max(80).optional(),
+  sameCityOnly: z.boolean().optional(),
 });
+
+const ageRangeCheck = (data) => data.ageMin === undefined || data.ageMax === undefined || data.ageMin <= data.ageMax;
+const ageRangeIssue = { message: "ageMin must be less than or equal to ageMax", path: ["ageMin"] };
+
+const profileSchema = profileFields.refine(ageRangeCheck, ageRangeIssue);
+const profileUpdateSchema = profileFields.partial().refine(ageRangeCheck, ageRangeIssue);
 
 // --- POST /profile — create profile (once account is confirmed real) ---
 router.post("/", async (req, res) => {
@@ -40,7 +51,7 @@ router.post("/", async (req, res) => {
 
 // --- PATCH /profile — update own profile ---
 router.patch("/", async (req, res) => {
-  const parsed = profileSchema.partial().safeParse(req.body);
+  const parsed = profileUpdateSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
 
   const profile = await prisma.profile.update({
@@ -54,7 +65,10 @@ router.patch("/", async (req, res) => {
 router.get("/me", async (req, res) => {
   const profile = await prisma.profile.findUnique({
     where: { userId: req.user.id },
-    include: { photos: { orderBy: { order: "asc" } } },
+    include: {
+      photos: { orderBy: { order: "asc" } },
+      prompts: { orderBy: { order: "asc" } },
+    },
   });
   if (!profile) return res.status(404).json({ error: "No profile yet" });
   res.json(profile);
@@ -65,6 +79,8 @@ router.get("/me", async (req, res) => {
 // (see routes/uploads.js), then calls this with the resulting url + s3Key.
 // The photo is created as PENDING and hidden from discovery until it passes
 // moderation, so nothing unreviewed is ever shown to other users.
+const MAX_PHOTOS = 6;
+
 router.post("/photos", async (req, res) => {
   const schema = z.object({
     url: z.string().url(),
@@ -76,6 +92,11 @@ router.post("/photos", async (req, res) => {
 
   const profile = await prisma.profile.findUnique({ where: { userId: req.user.id } });
   if (!profile) return res.status(404).json({ error: "Create your profile first" });
+
+  const existingCount = await prisma.photo.count({ where: { profileId: profile.id } });
+  if (existingCount >= MAX_PHOTOS) {
+    return res.status(400).json({ error: `You can have at most ${MAX_PHOTOS} photos — delete one first` });
+  }
 
   const photo = await prisma.photo.create({
     data: {
@@ -100,6 +121,76 @@ router.post("/photos", async (req, res) => {
   });
 
   res.status(201).json(updated);
+});
+
+// --- DELETE /profile/photos/:id ---
+router.delete("/photos/:id", async (req, res) => {
+  const profile = await prisma.profile.findUnique({ where: { userId: req.user.id } });
+  if (!profile) return res.status(404).json({ error: "No profile" });
+
+  const photo = await prisma.photo.findUnique({ where: { id: req.params.id } });
+  if (!photo || photo.profileId !== profile.id) return res.status(404).json({ error: "Photo not found" });
+
+  await prisma.photo.delete({ where: { id: photo.id } });
+  res.json({ message: "Deleted" });
+});
+
+// --- PATCH /profile/photos/reorder — set the display order of all photos ---
+// Body: { order: [photoId1, photoId2, ...] } — full list, in the desired
+// order. The first one becomes the primary/profile photo.
+router.patch("/photos/reorder", async (req, res) => {
+  const schema = z.object({ order: z.array(z.string().uuid()).min(1) });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
+
+  const profile = await prisma.profile.findUnique({ where: { userId: req.user.id } });
+  if (!profile) return res.status(404).json({ error: "No profile" });
+
+  const ownedPhotos = await prisma.photo.findMany({ where: { profileId: profile.id }, select: { id: true } });
+  const ownedIds = new Set(ownedPhotos.map((p) => p.id));
+  const allOwned = parsed.data.order.every((id) => ownedIds.has(id));
+  if (!allOwned || parsed.data.order.length !== ownedIds.size) {
+    return res.status(400).json({ error: "Order must include exactly your own photo IDs" });
+  }
+
+  await prisma.$transaction(
+    parsed.data.order.map((id, index) =>
+      prisma.photo.update({ where: { id }, data: { order: index, isPrimary: index === 0 } })
+    )
+  );
+
+  const photos = await prisma.photo.findMany({ where: { profileId: profile.id }, orderBy: { order: "asc" } });
+  res.json(photos);
+});
+
+// --- PUT /profile/prompts — replace all prompts (max 3) ---
+const promptsSchema = z.object({
+  prompts: z
+    .array(
+      z.object({
+        question: z.string().min(3).max(120),
+        answer: z.string().min(1).max(300),
+      })
+    )
+    .max(3),
+});
+
+router.put("/prompts", async (req, res) => {
+  const parsed = promptsSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
+
+  const profile = await prisma.profile.findUnique({ where: { userId: req.user.id } });
+  if (!profile) return res.status(404).json({ error: "Create your profile first" });
+
+  await prisma.$transaction([
+    prisma.profilePrompt.deleteMany({ where: { profileId: profile.id } }),
+    ...parsed.data.prompts.map((p, index) =>
+      prisma.profilePrompt.create({ data: { profileId: profile.id, question: p.question, answer: p.answer, order: index } })
+    ),
+  ]);
+
+  const prompts = await prisma.profilePrompt.findMany({ where: { profileId: profile.id }, orderBy: { order: "asc" } });
+  res.json(prompts);
 });
 
 module.exports = router;

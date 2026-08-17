@@ -162,3 +162,21 @@ already applied in this codebase.
   `User` model for exactly this future addition, currently always `false`.
   Not a bug — just not built yet, since it needs a real email-sending
   provider wired up (parallel to how `sms.js` wraps Twilio).
+- **Discovery matching behavior changed** when discovery filters were added.
+  Previously `discover.js` hardcoded opposite-gender-only matching with no
+  way to change it. It now defaults every profile's `preferredGender` to
+  `ANY` (shows both genders) unless the user explicitly narrows it via
+  Settings → Discovery filters. This is a deliberate improvement — it also
+  fixes a real oddity in the old behavior, where `FRIENDSHIP`-intent
+  profiles were still restricted to opposite-gender matches only, which
+  never made sense for a friendship feature — but it does mean existing
+  users will see a different Discover feed after this change than before,
+  without having done anything themselves.
+- **Discovery filters are one-directional.** Your `preferredGender`/age
+  range/`sameCityOnly` narrow what *you* see, but don't affect whether
+  *you* show up in someone else's feed. Real dating apps generally do this
+  bidirectionally (mutual filtering) — that's a reasonable follow-up, but
+  adds real query complexity (the current implementation is a single
+  `WHERE` clause; bidirectional filtering means checking the candidate's
+  preferences against the viewer too) that felt like scope creep for a
+  first pass at this feature.
