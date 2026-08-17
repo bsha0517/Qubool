@@ -2,10 +2,10 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 const SEED_USERS = [
-  { phone: "+923001111111", name: "Ayesha", age: 27, gender: "FEMALE", city: "Lahore", intention: "MARRIAGE", sect: "Sunni", education: "MBA, LUMS", bio: "Loves calligraphy and long walks along the canal." },
-  { phone: "+923002222222", name: "Hamza", age: 30, gender: "MALE", city: "Karachi", intention: "MARRIAGE", sect: "Sunni", education: "Software Engineer", bio: "Coffee enthusiast, cricket fan, family-oriented." },
-  { phone: "+923003333333", name: "Zara", age: 25, gender: "FEMALE", city: "Islamabad", intention: "SERIOUS_RELATIONSHIP", sect: "Shia", education: "Doctor", bio: "Book lover, hiking on weekends." },
-  { phone: "+923004444444", name: "Bilal", age: 29, gender: "MALE", city: "Lahore", intention: "MARRIAGE", sect: "Sunni", education: "Architect", bio: "Design-obsessed, plays the tabla badly." },
+  { phone: "+923001111111", name: "Ayesha", age: 27, gender: "FEMALE", city: "Lahore", intention: "DATING", education: "MBA, LUMS", bio: "Loves calligraphy and long walks along the canal." },
+  { phone: "+923002222222", name: "Hamza", age: 30, gender: "MALE", city: "Karachi", intention: "DATING", education: "Software Engineer", bio: "Coffee enthusiast, cricket fan, always up for new food spots." },
+  { phone: "+923003333333", name: "Zara", age: 25, gender: "FEMALE", city: "Islamabad", intention: "FRIENDSHIP", education: "Doctor", bio: "Book lover, hiking on weekends, looking to expand my circle." },
+  { phone: "+923004444444", name: "Bilal", age: 29, gender: "MALE", city: "Lahore", intention: "DATING", education: "Architect", bio: "Design-obsessed, plays the tabla badly but enthusiastically." },
 ];
 
 async function main() {
@@ -33,7 +33,6 @@ async function main() {
         gender: u.gender,
         city: u.city,
         intention: u.intention,
-        sect: u.sect,
         education: u.education,
         bio: u.bio,
         blurPhotosDefault: true,

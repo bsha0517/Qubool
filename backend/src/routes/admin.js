@@ -69,32 +69,6 @@ router.patch("/reports/:id", async (req, res) => {
   res.json(report);
 });
 
-// --- GET /admin/verifications — CNIC/ID review queue ---
-// Covers cases the automated KYC provider couldn't confidently resolve,
-// or that a moderator wants to double check (e.g. low name-match score).
-router.get("/verifications", async (req, res) => {
-  const status = req.query.status || "PENDING";
-  const verifications = await prisma.idVerification.findMany({
-    where: { status },
-    orderBy: { submittedAt: "asc" },
-    include: { user: { include: { profile: true } } },
-  });
-  res.json(verifications);
-});
-
-router.patch("/verifications/:id", async (req, res) => {
-  const { status, rejectionReason } = req.body;
-  const verification = await prisma.idVerification.update({
-    where: { id: req.params.id },
-    data: { status, rejectionReason, decidedAt: new Date() },
-  });
-  await prisma.user.update({
-    where: { id: verification.userId },
-    data: { verificationStatus: status === "PASSED" ? "ID_VERIFIED" : "REJECTED" },
-  });
-  res.json(verification);
-});
-
 // --- GET /admin/photos — pending photo moderation queue ---
 // (Automated moderation runs on upload; this is for manual review of
 // anything the classifier couldn't confidently pass or reject on its own,

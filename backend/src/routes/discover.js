@@ -46,7 +46,6 @@ router.get("/", async (req, res) => {
       age: c.age,
       city: c.city,
       intention: c.intention,
-      sect: c.sect,
       education: c.education,
       bio: c.bio,
       verified: c.user.verificationStatus !== "UNVERIFIED",

@@ -5,6 +5,17 @@ const { Server } = require("socket.io");
 const createApp = require("./app");
 const prisma = require("./config/prisma");
 
+// Last-resort safety net: log and keep running instead of letting an
+// unhandled rejection anywhere (e.g. a Redis client hiccup) kill the whole
+// process and take every user's request down with it. This does NOT
+// replace fixing the underlying bug — express-async-errors (see app.js)
+// already forwards errors from request handlers properly; this only
+// catches things that happen outside that path (client library internals,
+// startup code, etc). Treat anything logged here as worth investigating.
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled promise rejection (process kept running):", reason);
+});
+
 const httpServer = http.createServer();
 const io = new Server(httpServer, {
   cors: { origin: process.env.CORS_ORIGIN || "*" },
@@ -48,7 +59,7 @@ httpServer.on("request", app);
 
 const PORT = process.env.PORT || 4000;
 httpServer.listen(PORT, () => {
-  console.log(`Qubool API listening on port ${PORT}`);
+  console.log(`Dosti API listening on port ${PORT}`);
 });
 
 process.on("SIGTERM", async () => {

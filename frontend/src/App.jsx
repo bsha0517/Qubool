@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Heart, Shield, Users, MessageCircle, X, EyeOff, ChevronLeft, Send, Flag, Lock, Loader2, Settings as SettingsIcon, ShieldCheck, Camera } from "lucide-react";
+import { Heart, Shield, MessageCircle, X, EyeOff, ChevronLeft, Send, Flag, Lock, Loader2, Settings as SettingsIcon, Camera } from "lucide-react";
 import { api, setToken, getToken, getMyUserId } from "./api/client.js";
 import { connectSocket, disconnectSocket } from "./api/socket.js";
 import PhotoUpload from "./components/PhotoUpload.jsx";
-import IdVerification from "./components/IdVerification.jsx";
-import GuardianInvite from "./components/GuardianInvite.jsx";
 
 const FONT_IMPORT = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
@@ -66,10 +64,10 @@ function Welcome({ onNext }) {
   return (
     <div style={{ padding: "60px 28px 40px", textAlign: "center", minHeight: 560, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
       <div>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 42, color: "#0F3D3E" }}>Qubool</div>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 42, color: "#0F3D3E" }}>Dosti</div>
         <div style={{ marginTop: 6, marginBottom: 22 }}><PaisleyDivider /></div>
         <p style={{ fontFamily: "'Inter', sans-serif", color: "#5A5347", fontSize: 15, lineHeight: 1.6, maxWidth: 280, margin: "0 auto" }}>
-          A considerate way to meet someone — built around intention, family, and privacy.
+          A simple, honest way to meet people near you — swipe, match, chat.
         </p>
       </div>
       <Button onClick={onNext}>Get started</Button>
@@ -147,9 +145,8 @@ function PhoneVerify({ onVerified }) {
 
 function IntentionSelect({ onNext, draft, setDraft }) {
   const options = [
-    { key: "MARRIAGE", label: "Marriage", desc: "Looking for a life partner, with family involved when ready." },
-    { key: "SERIOUS_RELATIONSHIP", label: "Serious relationship", desc: "Getting to know someone with long-term intent." },
-    { key: "FRIENDSHIP", label: "Friendship first", desc: "Open to where a genuine connection leads." },
+    { key: "DATING", label: "Dating", desc: "Open to meeting someone new — see where it goes." },
+    { key: "FRIENDSHIP", label: "Friendship", desc: "Looking to meet people and build genuine connections." },
   ];
   return (
     <div>
@@ -201,13 +198,10 @@ function ToggleRow({ icon, title, desc, value, onChange }) {
 function PrivacySetup({ onNext, draft, setDraft }) {
   return (
     <div>
-      <TopBar title="Privacy & family settings" />
+      <TopBar title="Privacy settings" />
       <div style={{ padding: 24 }}>
         <ToggleRow icon={<EyeOff size={18} color="#0F3D3E" />} title="Blur my photos until we match" desc="Only matched, mutually-interested users see your clear photo."
           value={draft.blurPhotosDefault} onChange={(v) => setDraft({ ...draft, blurPhotosDefault: v })} />
-        <div style={{ height: 14 }} />
-        <ToggleRow icon={<Users size={18} color="#0F3D3E" />} title="Enable guardian mode" desc="A parent or guardian you choose can see match notifications. Fully optional and revocable anytime."
-          value={draft.guardianModeOn} onChange={(v) => setDraft({ ...draft, guardianModeOn: v })} />
         <div style={{ marginTop: 24 }}>
           <Button onClick={onNext}>Continue</Button>
         </div>
@@ -232,7 +226,6 @@ function ProfileSetup({ onNext, draft, setDraft }) {
         intention: draft.intention,
         bio: draft.bio || undefined,
         blurPhotosDefault: draft.blurPhotosDefault,
-        guardianModeOn: draft.guardianModeOn,
       });
       onNext();
     } catch (e) {
@@ -352,8 +345,7 @@ function Discover({ onMatched }) {
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 21, color: "#16211F", fontWeight: 600 }}>{current.name}, {current.age}</div>
           <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "#8A8375", marginTop: 2 }}>{current.city}{current.education ? ` · ${current.education}` : ""}</div>
           <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-            <Tag>{current.intention?.replace("_", " ")}</Tag>
-            {current.sect && <Tag>{current.sect}</Tag>}
+            <Tag>{current.intention}</Tag>
           </div>
           {current.bio && <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13.5, color: "#5A5347", marginTop: 12, lineHeight: 1.5 }}>{current.bio}</p>}
         </div>
@@ -473,7 +465,7 @@ function OnboardingPhotoStep({ onDone }) {
 }
 
 function Settings() {
-  const [section, setSection] = useState("menu"); // menu | photos | id | guardian
+  const [section, setSection] = useState("menu"); // menu | photos
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
 
@@ -483,8 +475,6 @@ function Settings() {
 
   const items = [
     { key: "photos", label: "Manage photos", icon: <Camera size={18} color="#0F3D3E" /> },
-    { key: "id", label: "ID verification", icon: <ShieldCheck size={18} color="#0F3D3E" /> },
-    { key: "guardian", label: "Guardian mode", icon: <Users size={18} color="#0F3D3E" /> },
   ];
 
   if (section !== "menu") {
@@ -493,8 +483,6 @@ function Settings() {
         <TopBar title="Settings" onBack={() => setSection("menu")} />
         <div style={{ padding: 24 }}>
           {section === "photos" && <PhotoUpload initialPhotos={profile?.photos || []} showContinue={false} />}
-          {section === "id" && <IdVerification />}
-          {section === "guardian" && <GuardianInvite guardianModeOn={!!profile?.guardianModeOn} />}
         </div>
       </div>
     );
@@ -533,7 +521,7 @@ export default function App() {
   const [tab, setTab] = useState("discover");
   const [activeChat, setActiveChat] = useState(null);
   const [matchesRefreshKey, setMatchesRefreshKey] = useState(0);
-  const [draft, setDraft] = useState({ name: "", age: "", city: "", bio: "", intention: null, gender: null, blurPhotosDefault: true, guardianModeOn: false });
+  const [draft, setDraft] = useState({ name: "", age: "", city: "", bio: "", intention: null, gender: null, blurPhotosDefault: true });
 
   // On load, if we already have a token, check whether a profile exists
   // and skip straight to the app instead of re-running onboarding.
@@ -577,7 +565,7 @@ export default function App() {
       ) : (
         <>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #E4DCC9" }}>
-            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, color: "#0F3D3E", fontWeight: 600 }}>Qubool</span>
+            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, color: "#0F3D3E", fontWeight: 600 }}>Dosti</span>
             <Lock size={16} color="#C9A24B" />
           </div>
           {tab === "discover" && <Discover onMatched={() => setMatchesRefreshKey((k) => k + 1)} />}

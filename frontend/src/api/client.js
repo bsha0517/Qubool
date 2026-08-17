@@ -4,12 +4,12 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 // the user out. Swap localStorage for a more secure storage mechanism
 // (e.g. httpOnly cookie issued by the backend) before shipping to
 // production — localStorage is XSS-readable.
-let token = localStorage.getItem("qubool_token") || null;
+let token = localStorage.getItem("dosti_token") || null;
 
 function setToken(newToken) {
   token = newToken;
-  if (newToken) localStorage.setItem("qubool_token", newToken);
-  else localStorage.removeItem("qubool_token");
+  if (newToken) localStorage.setItem("dosti_token", newToken);
+  else localStorage.removeItem("dosti_token");
 }
 
 function getToken() {
@@ -75,13 +75,6 @@ export const api = {
   sendMessage: (matchId, body) => request(`/matches/${matchId}/messages`, { method: "POST", body: { body } }),
   unmatch: (matchId) => request(`/matches/${matchId}/unmatch`, { method: "POST" }),
 
-  // --- guardian ---
-  inviteGuardian: (guardianPhone) => request("/guardian/invite", { method: "POST", body: { guardianPhone } }),
-
-  // --- verification ---
-  submitIdVerification: (payload) => request("/verification/id", { method: "POST", body: payload }),
-  getIdVerificationStatus: () => request("/verification/id/status"),
-
   // --- reports ---
   fileReport: (reportedUserId, reason, details) =>
     request("/reports", { method: "POST", body: { reportedUserId, reason, details } }),
@@ -91,7 +84,7 @@ export const api = {
  * Full upload flow: ask the backend for a signed URL, PUT the raw file
  * bytes directly to storage (bypassing our own server), and return the
  * { publicUrl, key } the caller needs to register the upload afterwards
- * (via registerPhoto or submitIdVerification).
+ * (via registerPhoto).
  */
 async function uploadFile(file, purpose) {
   const { uploadUrl, publicUrl, key } = await api.getSignedUploadUrl(purpose, file.type);

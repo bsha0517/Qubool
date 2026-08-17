@@ -12,16 +12,11 @@ const profileSchema = z.object({
   age: z.number().int().min(18).max(80),
   gender: z.enum(["MALE", "FEMALE"]),
   city: z.string().min(2).max(60),
-  intention: z.enum(["MARRIAGE", "SERIOUS_RELATIONSHIP", "FRIENDSHIP"]),
-  sect: z.string().max(40).optional(),
-  religiosityLevel: z.string().max(40).optional(),
+  intention: z.enum(["DATING", "FRIENDSHIP"]),
   education: z.string().max(100).optional(),
   profession: z.string().max(100).optional(),
-  familyBackground: z.string().max(100).optional(),
   bio: z.string().max(500).optional(),
   blurPhotosDefault: z.boolean().optional(),
-  guardianModeOn: z.boolean().optional(),
-  showFamilyBackground: z.boolean().optional(),
 });
 
 // --- POST /profile — create profile (once, post-verification) ---

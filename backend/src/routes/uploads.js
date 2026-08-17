@@ -9,19 +9,23 @@ const { getSignedUploadUrl, isConfigured } = require("../services/uploads");
 const router = express.Router();
 
 const requestSchema = z.object({
-  purpose: z.enum(["profile-photo", "cnic-front", "cnic-back", "selfie"]),
+  purpose: z.enum(["profile-photo"]),
   contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
 });
 
 // --- POST /uploads/signed-url ---
 // Client asks for a place to PUT a file directly to storage, then reports
-// the returned publicUrl/key back to /profile/photos or /verification/id.
+// the returned publicUrl/key back to /profile/photos.
 router.post("/signed-url", requireAuth, async (req, res) => {
   const parsed = requestSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
 
   try {
-    const result = await getSignedUploadUrl({ userId: req.user.id, ...parsed.data });
+    // req.protocol correctly reports "https" behind Render's proxy only
+    // because app.js sets `trust proxy` — otherwise this would derive
+    // "http" even on an https deployment.
+    const selfBaseUrl = `${req.protocol}://${req.get("host")}`;
+    const result = await getSignedUploadUrl({ userId: req.user.id, selfBaseUrl, ...parsed.data });
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });

@@ -23,16 +23,9 @@ async function requireAuth(req, res, next) {
 }
 
 // Gate certain actions (e.g. sending messages) behind phone verification.
-// Levels are assigned by what the status actually implies about phone
-// verification, not by enum declaration order — ID_PENDING and REJECTED
-// both mean "phone was verified, ID verification is in progress or didn't
-// pass," so they must stay at the PHONE_VERIFIED level, not fall below it.
 const VERIFICATION_LEVEL = {
   UNVERIFIED: 0,
   PHONE_VERIFIED: 1,
-  ID_PENDING: 1,
-  REJECTED: 1,
-  ID_VERIFIED: 2,
 };
 
 function requireVerification(minLevel = "PHONE_VERIFIED") {

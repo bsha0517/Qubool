@@ -1,6 +1,6 @@
-# Qubool — Frontend
+# Dosti — Frontend
 
-React (Vite) client wired to the Qubool backend API — real network
+React (Vite) client wired to the Dosti backend API — real network
 calls, no mock data. Covers phone-OTP auth, profile creation, curated daily
 matches, liking/passing, matches list, and real-time chat via Socket.io.
 
@@ -29,19 +29,13 @@ way to get Postgres + Redis + API running together).
 ## Now built
 
 - **Photo upload** — `src/components/PhotoUpload.jsx`. Onboarding includes a photo step after profile creation; each of up to 3 slots does the full signed-URL → direct-to-storage `PUT` → `registerPhoto` flow, and shows a live moderation status pill (Reviewing / Approved / Rejected) since the backend moderates synchronously on registration.
-- **CNIC/ID verification** — `src/components/IdVerification.jsx`. Collects CNIC number + three photos (front/back/selfie), uploads each, submits to `/verification/id`, then polls `/verification/id/status` every 4s while pending.
-- **Guardian invite** — `src/components/GuardianInvite.jsx`. Lets a user with guardian mode on invite a guardian by phone via `/guardian/invite`; shows a friendly explainer and disables itself if guardian mode is off.
-
-All three are reachable from a new **Settings** tab (third tab in the main nav), and the photo step also appears once during onboarding, right after profile creation.
+- **Settings** tab — currently just photo management; a natural place to add more account settings later.
 
 ## Known gaps
 
 - **Token storage uses localStorage**, which is readable by any injected
   script (XSS risk). Fine for a prototype; swap for an httpOnly-cookie-based
   session before shipping.
-- The guardian invite screen doesn't yet show the *list* of already-invited
-  guardians (only ones invited this session) — add a `GET` list endpoint on
-  the backend if that's needed.
 
 ## Structure
 

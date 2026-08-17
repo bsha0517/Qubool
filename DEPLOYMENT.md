@@ -1,6 +1,6 @@
 # Deployment Guide
 
-Qubool is split into two independent deployments:
+Dosti is split into two independent deployments:
 
 - **`frontend/`** — a static Vite build → **Vercel**
 - **`backend/`** — a long-running Express + Socket.io server → **Render**
@@ -84,9 +84,9 @@ Deploy the databases first, then the backend, then the frontend.
 1. **Push this repo to GitHub** if it isn't already there.
 2. Go to [render.com](https://render.com) → sign up → **New** → **Blueprint**.
 3. Connect this GitHub repo. Render reads `render.yaml` at the repo root
-   and proposes creating the `qubool-api` web service on the **free** plan.
+   and proposes creating the `dosti-api` web service on the **free** plan.
 4. Before/after creating it, set these environment variables on the
-   `qubool-api` service (**Environment** tab):
+   `dosti-api` service (**Environment** tab):
    ```
    DATABASE_URL=<your Supabase connection string from step 1>
    REDIS_URL=<your Upstash connection string from step 2>
@@ -95,15 +95,15 @@ Deploy the databases first, then the backend, then the frontend.
    NODE_ENV=production
    CORS_ORIGIN=<your Vercel URL — comes from step 4 below, add this after>
    ```
-   Everything else in `backend/.env.example` (Twilio, AWS, KYC provider,
-   moderation API) is optional — the app has working dev fallbacks for all
-   of them (see `backend/BUG_AUDIT.md`), so you can launch without any of
-   those accounts and add real ones later.
+   Everything else in `backend/.env.example` (Twilio, AWS, moderation API)
+   is optional — the app has working dev fallbacks for both (see
+   `backend/BUG_AUDIT.md`), so you can launch without any of those accounts
+   and add real ones later.
 5. Deploy. Render builds from `backend/Dockerfile`, which runs
    `npx prisma migrate deploy` automatically before starting the server, so
    your Supabase database gets its schema set up on first deploy.
 6. Once it's live, copy the public URL Render gives you (something like
-   `https://qubool-api.onrender.com`) — you'll need it for the frontend.
+   `https://dosti-api.onrender.com`) — you'll need it for the frontend.
 7. (Optional) Seed sample profiles once: **Shell** tab on the Render
    service → `npm run seed`.
 
@@ -134,16 +134,16 @@ Redis plugins → set env vars → deploy.
    - Output Directory: `dist`
    - Install Command: `npm install`
    (These are already set in `frontend/vercel.json`, so you shouldn't need to touch them.)
-4. **Add an environment variable**: `VITE_API_URL` = the backend URL from step 3.6 above (e.g. `https://qubool-api.onrender.com`).
-5. Deploy. Vercel gives you a URL like `https://qubool.vercel.app`.
+4. **Add an environment variable**: `VITE_API_URL` = the backend URL from step 3.6 above (e.g. `https://dosti-api.onrender.com`).
+5. Deploy. Vercel gives you a URL like `https://dosti.vercel.app`.
 
 ---
 
 ## 5. Connect the two
 
-Go back to Render → `qubool-api` → **Environment** and set:
+Go back to Render → `dosti-api` → **Environment** and set:
 ```
-CORS_ORIGIN=https://qubool.vercel.app
+CORS_ORIGIN=https://dosti.vercel.app
 ```
 (use your actual Vercel URL). Save — Render redeploys automatically. Without
 this, the browser will block requests from the frontend to the API.
@@ -168,9 +168,9 @@ this, the browser will block requests from the frontend to the API.
 
 ## Going further (production readiness)
 
-- Add real credentials for Twilio (SMS), AWS S3 + Rekognition (photos), and a KYC provider (CNIC verification) — see `backend/.env.example` for the full list.
+- Add real credentials for Twilio (SMS) and AWS S3 + Rekognition (photos) — see `backend/.env.example` for the full list.
 - Point `S3_BUCKET_NAME`/AWS credentials at a real bucket before relying on photo uploads long-term; the local-disk fallback doesn't survive redeploys, and is even more ephemeral on Render's free tier than elsewhere.
-- Review `backend/COMPLIANCE_BRIEFING.md` with actual Pakistani legal counsel before launching to real users — PECA 2016 and data residency questions are outlined there.
+- `backend/COMPLIANCE_BRIEFING.md` was written when this app collected CNIC/national-ID data for matrimonial verification; that's no longer the case after the pivot to a general dating app, which meaningfully reduces the sensitivity of what's collected. Worth a quick re-read before launch, but the CNIC-specific sections no longer apply.
 - Consider a custom domain on both Vercel and Render once you're past testing.
 - If Render's cold start or Supabase/Upstash's free-tier limits ever become
   a real constraint, upgrading any one of the three is independent of the

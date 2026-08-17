@@ -1,5 +1,5 @@
-// Qubool — Database Schema
-// Run: npx prisma migrate dev --name init
+// Dosti — Database Schema
+// Run: npx prisma migrate deploy (see prisma/migrations)
 
 generator client {
   provider = "prisma-client-js"
@@ -11,8 +11,7 @@ datasource db {
 }
 
 enum Intention {
-  MARRIAGE
-  SERIOUS_RELATIONSHIP
+  DATING
   FRIENDSHIP
 }
 
@@ -24,9 +23,6 @@ enum Gender {
 enum VerificationStatus {
   UNVERIFIED
   PHONE_VERIFIED
-  ID_PENDING
-  ID_VERIFIED
-  REJECTED
 }
 
 enum AdminRole {
@@ -64,7 +60,6 @@ model User {
   phoneVerified       Boolean             @default(false)
   email               String?             @unique
   passwordHash        String?
-  cnicHash            String?             // hashed CNIC, never store raw
   verificationStatus  VerificationStatus  @default(UNVERIFIED)
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
@@ -75,9 +70,6 @@ model User {
   adminRole           AdminRole           @default(NONE)
 
   profile             Profile?
-  idVerification      IdVerification?
-  guardianLinks       GuardianLink[]      @relation("WardLinks")
-  guardianOf          GuardianLink[]      @relation("GuardianLinks")
 
   sentLikes           MatchAction[]       @relation("ActionByUser")
   receivedLikes       MatchAction[]       @relation("ActionOnUser")
@@ -105,16 +97,11 @@ model Profile {
   gender            Gender
   city              String
   intention         Intention
-  sect              String?
-  religiosityLevel  String?    // e.g. "practicing", "moderate", "cultural" — optional, user-set
   education         String?
   profession        String?
-  familyBackground  String?    // optional, hideable field (caste/biradari) - never required
   bio               String?    @db.VarChar(500)
 
   blurPhotosDefault Boolean    @default(true)
-  guardianModeOn    Boolean    @default(false)
-  showFamilyBackground Boolean @default(false)
 
   photos            Photo[]
 
@@ -135,21 +122,6 @@ model Photo {
   moderationStatus String @default("PENDING") // PENDING | PASSED | REJECTED
   moderationReason String?
   createdAt  DateTime @default(now())
-}
-
-// A guardian is a linked family member who can optionally view match
-// notifications / chat existence for a ward, only when the ward opts in.
-model GuardianLink {
-  id            String   @id @default(uuid())
-  ward          User     @relation("WardLinks", fields: [wardId], references: [id])
-  wardId        String
-  guardian      User     @relation("GuardianLinks", fields: [guardianId], references: [id])
-  guardianId    String
-  approvedByWard Boolean @default(false)
-  createdAt     DateTime @default(now())
-  revokedAt     DateTime?
-
-  @@unique([wardId, guardianId])
 }
 
 // One row per swipe/decision. Two MatchAction rows (A->B, B->A) get
@@ -209,27 +181,6 @@ model Report {
   createdAt    DateTime      @default(now())
   resolvedAt   DateTime?
   moderatorNote String?
-
-  @@index([status])
-}
-
-// Tracks a single CNIC + liveness verification attempt via a third-party
-// KYC provider. We NEVER store the raw CNIC number — only a salted hash
-// (for duplicate-account detection) plus whatever reference ID the
-// provider gives us to look up the result on their side.
-model IdVerification {
-  id               String    @id @default(uuid())
-  user             User      @relation(fields: [userId], references: [id])
-  userId           String    @unique
-  provider         String    // e.g. "onfido", "persona", "local-kyc-vendor"
-  providerRefId    String    // provider's case/check ID — used to fetch status, never guess it
-  cnicHash         String    // sha256(CNIC + pepper), for dedup only
-  status           String    @default("PENDING") // PENDING | PASSED | FAILED | EXPIRED
-  livenessPassed   Boolean   @default(false)
-  nameMatchScore   Float?    // similarity between CNIC name and profile name, if provider returns it
-  submittedAt      DateTime  @default(now())
-  decidedAt        DateTime?
-  rejectionReason  String?
 
   @@index([status])
 }

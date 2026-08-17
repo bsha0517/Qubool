@@ -13,7 +13,7 @@ const client = isConfigured ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env
  * the rest of the app only calls `sendOtpSms`, so the provider is isolated here.
  */
 async function sendOtpSms(phone, code) {
-  const body = `Your Qubool verification code is ${code}. It expires in 5 minutes. Never share this code with anyone.`;
+  const body = `Your Dosti verification code is ${code}. It expires in 5 minutes. Never share this code with anyone.`;
 
   if (!isConfigured) {
     console.log(`[SMS DEV FALLBACK] to=${phone} body="${body}"`);

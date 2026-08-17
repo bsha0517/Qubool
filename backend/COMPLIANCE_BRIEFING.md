@@ -1,5 +1,15 @@
 # Compliance Briefing: PECA 2016 & Data Residency
 
+> **Note (post-pivot):** this was written when the app collected CNIC/national-ID
+> data for matrimonial identity verification. That feature was removed when
+> the product pivoted from a matrimonial app ("Qubool") to Dosti, a general
+> dating/friendship app — the app no longer collects CNIC numbers, KYC
+> documents, or selfies for identity verification. The CNIC-specific sections
+> below no longer apply; the general PECA/data-residency questions (data
+> hosting location, breach notification, content moderation obligations)
+> still do, since those apply to any app handling private messaging and
+> photos, not just ones doing ID verification.
+
 **This document is not legal advice.** I'm not a lawyer, and Pakistani tech/data
 law is an evolving area. Treat this as a starting brief to hand to actual
 counsel licensed in Pakistan — it names the right questions, not the answers.

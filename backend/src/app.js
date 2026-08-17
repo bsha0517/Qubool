@@ -15,10 +15,8 @@ const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profile");
 const discoverRoutes = require("./routes/discover");
 const matchesRoutes = require("./routes/matches");
-const guardianRoutes = require("./routes/guardian");
 const reportsRoutes = require("./routes/reports");
 const adminRoutes = require("./routes/admin");
-const verificationRoutes = require("./routes/verification");
 const { router: uploadsRoutes, UPLOAD_DIR } = require("./routes/uploads");
 
 // Redis-backed rate limiting: counters are shared across all API instances
@@ -33,6 +31,14 @@ function redisStore(prefix) {
 
 function createApp(io) {
   const app = express();
+
+  // Render (and most PaaS providers) terminate TLS at their edge and proxy
+  // plain HTTP to this container — without this, req.protocol would always
+  // report "http" even on an https:// deployment, and req.ip would show the
+  // proxy's address instead of the real client's. This trusts the first
+  // hop's X-Forwarded-* headers, which is correct for a single reverse
+  // proxy in front of the app (not for directly-exposed deployments).
+  app.set("trust proxy", 1);
 
   app.use(helmet());
   app.use(cors({ origin: process.env.CORS_ORIGIN || "*", credentials: true }));
@@ -61,10 +67,8 @@ function createApp(io) {
   app.use("/profile", profileRoutes);
   app.use("/discover", discoverRoutes);
   app.use("/matches", matchesRoutes);
-  app.use("/guardian", guardianRoutes);
   app.use("/reports", reportsRoutes);
   app.use("/admin", adminRoutes);
-  app.use("/verification", verificationRoutes);
   app.use("/uploads", uploadsRoutes);
   // Serves files written by the local-disk dev upload fallback (see
   // services/uploads.js) — only ever populated when AWS isn't configured.

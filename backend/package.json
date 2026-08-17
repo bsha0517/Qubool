@@ -1,7 +1,7 @@
 {
-  "name": "qubool-backend",
+  "name": "dosti-backend",
   "version": "1.0.0",
-  "description": "Backend API for Qubool - a culturally-aware matchmaking app for Pakistan",
+  "description": "Backend API for Dosti - a culturally-aware matchmaking app for Pakistan",
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {

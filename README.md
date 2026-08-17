@@ -1,12 +1,12 @@
-# Qubool
+# Dosti
 
-A culturally-aware matchmaking app for Pakistan: phone-verified profiles,
-intention-based matching (marriage / serious relationship / friendship),
-optional guardian mode, blur-until-match photos, CNIC/ID verification, and
-moderated chat.
+A general dating and friendship app: phone-verified profiles, curated
+daily matches (not infinite swipe), blur-until-match photos, and moderated
+chat. Choose "Dating" or "Friendship" as your intent — no other filters
+gate who you can match with.
 
 ```
-qubool/
+dosti/
   backend/     Express + PostgreSQL + Redis API (see backend/README.md)
   frontend/    React (Vite) client wired to the API (see frontend/README.md)
   docker-compose.yml   spins up the whole stack together
@@ -25,9 +25,8 @@ automatically) → the web client.
 - API: http://localhost:4000 (health check at `/health`)
 
 Everything works out of the box with dev fallbacks — no external vendor
-accounts (Twilio, AWS, a KYC provider) are required to try the app locally:
-- OTP codes are logged to the `qubool-api` container's logs instead of being texted
-- CNIC/ID verification auto-passes
+accounts (Twilio, AWS) are required to try the app locally:
+- OTP codes are logged to the `dosti-api` container's logs instead of being texted
 - Chat moderation runs on the local regex pre-filter only
 
 To seed a few sample profiles once it's running:
@@ -60,5 +59,4 @@ docker compose down -v     # stop and wipe the database
   "what still needs real vendor credentials before launch" list
 - `backend/COMPLIANCE_BRIEFING.md` — PECA 2016 / data residency questions to
   bring to actual Pakistani legal counsel (not a substitute for one)
-- `frontend/README.md` — what's wired up vs. what UI still needs to be built
-  (photo upload, ID verification screen, guardian invite screen)
+- `frontend/README.md` — what's wired up on the frontend

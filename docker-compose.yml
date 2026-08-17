@@ -3,25 +3,25 @@ version: "3.9"
 services:
   postgres:
     image: postgres:16
-    container_name: qubool-postgres
+    container_name: dosti-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: qubool
-      POSTGRES_PASSWORD: qubool
-      POSTGRES_DB: qubool
+      POSTGRES_USER: dosti
+      POSTGRES_PASSWORD: dosti
+      POSTGRES_DB: dosti
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U qubool -d qubool"]
+      test: ["CMD-SHELL", "pg_isready -U dosti -d dosti"]
       interval: 5s
       timeout: 5s
       retries: 10
 
   redis:
     image: redis:7-alpine
-    container_name: qubool-redis
+    container_name: dosti-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -35,7 +35,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: qubool-api
+    container_name: dosti-api
     restart: unless-stopped
     depends_on:
       postgres:
@@ -47,7 +47,7 @@ services:
     env_file:
       - ./backend.env.docker
     environment:
-      DATABASE_URL: "postgresql://qubool:qubool@postgres:5432/qubool"
+      DATABASE_URL: "postgresql://dosti:dosti@postgres:5432/dosti"
       REDIS_URL: "redis://redis:6379"
       CORS_ORIGIN: "http://localhost:5173"
     command: >
@@ -57,7 +57,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: qubool-web
+    container_name: dosti-web
     restart: unless-stopped
     depends_on:
       - api

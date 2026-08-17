@@ -1,10 +1,8 @@
-const { RekognitionClient, DetectModerationLabelsCommand, CompareFacesCommand } = require("@aws-sdk/client-rekognition");
+const { RekognitionClient, DetectModerationLabelsCommand } = require("@aws-sdk/client-rekognition");
 
 /**
  * Screens uploaded profile photos for explicit/violent/graphic content
- * before they ever go live on a profile. Also exposes a face-match helper
- * used to confirm the CNIC photo and the liveness selfie are the same person
- * (defense-in-depth alongside whatever the KYC provider already checks).
+ * before they ever go live on a profile.
  */
 
 const isConfigured = !!(process.env.AWS_ACCESS_KEY_ID && process.env.S3_BUCKET_NAME);
@@ -49,27 +47,4 @@ async function moderateImage(s3Key) {
   }
 }
 
-/** Confirms the CNIC photo and the liveness selfie show the same face. */
-async function compareFaces(sourceKey, targetKey) {
-  if (!isConfigured) {
-    console.log("[MODERATION DEV FALLBACK] Auto-passing face comparison");
-    return { matched: true, similarity: 100 };
-  }
-
-  try {
-    const result = await rekognition.send(
-      new CompareFacesCommand({
-        SourceImage: { S3Object: { Bucket: BUCKET, Name: sourceKey } },
-        TargetImage: { S3Object: { Bucket: BUCKET, Name: targetKey } },
-        SimilarityThreshold: 85,
-      })
-    );
-    const bestMatch = result.FaceMatches?.[0];
-    return { matched: !!bestMatch, similarity: bestMatch?.Similarity || 0 };
-  } catch (err) {
-    console.error("Face comparison failed:", err.message);
-    return { matched: false, similarity: 0 };
-  }
-}
-
-module.exports = { moderateImage, compareFaces };
+module.exports = { moderateImage };
