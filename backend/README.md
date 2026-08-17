@@ -38,6 +38,17 @@ docker compose exec -e AUTO_LIKE_PHONE=+923001234567 api npm run seed
 # or: docker compose exec -e AUTO_LIKE_EMAIL=you@example.com api npm run seed
 ```
 
+If Discover shows an empty "That's today's batch" state, you've likely
+already swiped through all the seed profiles in an earlier session —
+re-seeding alone won't add new people (it upserts the same 12). Reset your
+swipe history against just the seed accounts (never touches real users):
+
+```bash
+docker compose exec -e RESET_SWIPES_FOR_PHONE=+923001234567 api npm run seed
+```
+
+Both env vars can be combined in one run to reset and re-like at once.
+
 To stop everything (keeping data): `docker compose stop`
 To stop and wipe the database: `docker compose down -v`
 
@@ -89,6 +100,13 @@ accounts), re-run with your own phone/email:
 
 ```bash
 AUTO_LIKE_PHONE=+923001234567 npm run seed
+```
+
+If Discover ever shows nothing (you've already swiped through everyone),
+reset your history with just the seed accounts:
+
+```bash
+RESET_SWIPES_FOR_PHONE=+923001234567 npm run seed
 ```
 
 ## 4. Run the server

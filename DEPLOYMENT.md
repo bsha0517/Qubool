@@ -108,7 +108,11 @@ Deploy the databases first, then the backend, then the frontend.
    service → `npm run seed`. Re-run with `AUTO_LIKE_PHONE=<your phone> npm run seed`
    afterward (once you've signed up in the app) so the seed profiles like
    you back — matches need mutual likes, and static seed accounts can't
-   reciprocate on their own otherwise.
+   reciprocate on their own otherwise. If Discover ever shows an empty
+   "That's today's batch" state, it means you've already swiped through
+   all the seed profiles — reset your history with them specifically via
+   `RESET_SWIPES_FOR_PHONE=<your phone> npm run seed` (safe — only affects
+   your history with the seed accounts, never real users).
 
 ### Note on Render's free tier
 

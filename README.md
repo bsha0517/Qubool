@@ -47,6 +47,11 @@ docker compose exec api npm run seed
    docker compose exec -e AUTO_LIKE_PHONE=+923001234567 api npm run seed
    ```
    (swap in whatever number you signed up with — or `AUTO_LIKE_EMAIL=you@example.com` if you used email signup instead). Now swiping right on any seed profile matches instantly, so you can try the Matches tab and chat.
+6. **If Discover shows "That's today's batch" with nothing in it**: you've already swiped on all the seed profiles in an earlier session — Discover excludes anyone you've already acted on, and re-seeding alone doesn't create new people (it just upserts the same 12). Reset your swipe history against them specifically:
+   ```bash
+   docker compose exec -e RESET_SWIPES_FOR_PHONE=+923001234567 api npm run seed
+   ```
+   This only clears your history with the seed accounts — it never touches matches/swipes with real people. Combine it with `AUTO_LIKE_PHONE` in the same command to reset and re-like in one step.
 
 ## Stopping / resetting
 

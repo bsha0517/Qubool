@@ -78,6 +78,48 @@ async function main() {
   }
   console.log(`Seeded ${SEED_USERS.length} demo profiles with photos and prompts.`);
 
+  // --- Optional: reset YOUR OWN swipe history against just the seed
+  // profiles, so you can re-test Discover from scratch without needing a
+  // new phone number every time. Discover excludes anyone you've already
+  // liked/passed — if you swiped through all the seed profiles in an
+  // earlier test session, re-running the seed step above alone won't give
+  // you anyone new to see, since it only upserts the same 12 people rather
+  // than creating fresh ones. This clears your MatchAction rows (and any
+  // resulting matches) against seed accounts ONLY — it never touches your
+  // history with real users, since it's scoped to seededUserIds.
+  //
+  // Usage: RESET_SWIPES_FOR_PHONE=+923001234567 npm run seed
+  // (or RESET_SWIPES_FOR_EMAIL=you@example.com)
+  const resetPhone = process.env.RESET_SWIPES_FOR_PHONE;
+  const resetEmail = process.env.RESET_SWIPES_FOR_EMAIL;
+  if (resetPhone || resetEmail) {
+    const resetUser = await prisma.user.findUnique({
+      where: resetPhone ? { phone: resetPhone } : { email: resetEmail },
+    });
+    if (!resetUser) {
+      console.warn(`RESET_SWIPES target (${resetPhone || resetEmail}) not found — sign up/verify first, then re-run.`);
+    } else {
+      // Revert any MATCHED rows against seed accounts to UNMATCHED first,
+      // then delete the swipe history in both directions.
+      for (const seedId of seededUserIds) {
+        const [userAId, userBId] = [resetUser.id, seedId].sort();
+        const existingMatch = await prisma.match.findUnique({ where: { userAId_userBId: { userAId, userBId } } });
+        if (existingMatch && existingMatch.status === "MATCHED") {
+          await prisma.match.update({ where: { id: existingMatch.id }, data: { status: "UNMATCHED", unmatchedAt: new Date() } });
+        }
+      }
+      const deleted = await prisma.matchAction.deleteMany({
+        where: {
+          OR: [
+            { actorId: resetUser.id, targetId: { in: seededUserIds } },
+            { actorId: { in: seededUserIds }, targetId: resetUser.id },
+          ],
+        },
+      });
+      console.log(`Cleared ${deleted.count} swipe records between ${resetPhone || resetEmail} and the seed profiles — Discover will show them all again.`);
+    }
+  }
+
   // --- Optional: make every seed profile "like" a real account back, so
   // swiping right on any of them instantly produces a match — useful for
   // demoing Matches/Chat without waiting on a bot to reciprocate, which
