@@ -49,6 +49,8 @@ docker compose exec -e RESET_SWIPES_FOR_PHONE=+923001234567 api npm run seed
 
 Both env vars can be combined in one run to reset and re-like at once.
 
+**No shell access on your host (e.g. Render's free tier)?** See "Seeding without shell access" below — `npm run seed` needs a shell, but everything it does is also available over HTTP.
+
 To stop everything (keeping data): `docker compose stop`
 To stop and wipe the database: `docker compose down -v`
 
@@ -108,6 +110,34 @@ reset your history with just the seed accounts:
 ```bash
 RESET_SWIPES_FOR_PHONE=+923001234567 npm run seed
 ```
+
+### Seeding without shell access
+
+Some hosts (Render's free tier, for one) don't give you a shell to run
+`npm run seed` in at all. `POST /dev/seed` does the exact same thing over
+plain HTTP instead.
+
+1. Set `SEED_TRIGGER_SECRET` in your environment to a long random string
+   (the route 404s if this isn't set, so it's off by default). On Render:
+   Environment tab → add the variable → redeploy.
+2. Call it with curl (or Postman, or your browser's dev console):
+   ```bash
+   curl -X POST https://your-api.onrender.com/dev/seed \
+     -H "X-Seed-Secret: <your secret>" \
+     -H "Content-Type: application/json" \
+     -d '{"autoLikePhone": "+923001234567"}'
+   ```
+   Supported body fields, all optional: `autoLikePhone`, `autoLikeEmail`,
+   `resetSwipesPhone`, `resetSwipesEmail` — same meaning as the `npm run
+   seed` env vars above, just as JSON instead. An empty body (`{}`) just
+   seeds/upserts the 12 demo profiles with no extra steps.
+3. The response lists what happened, e.g.:
+   ```json
+   { "messages": ["Seeded super-admin (+923009999999) and 12 demo profiles.", "All 12 seed profiles now like +923001234567 back."] }
+   ```
+
+This endpoint is rate-limited (5 requests/15min) since it's reachable
+without an existing account — the secret is what protects it.
 
 ## 4. Run the server
 

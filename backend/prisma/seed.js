@@ -1,82 +1,10 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
-
-// Unsplash photos are used directly (no upload/moderation pipeline needed
-// for seed data) and marked PASSED so they show up in Discover immediately.
-const SEED_USERS = [
-  { phone: "+923001111111", name: "Ayesha", age: 27, gender: "FEMALE", city: "Lahore", intention: "DATING", education: "MBA, LUMS", bio: "Loves calligraphy and long walks along the canal.", photos: ["https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&h=800&fit=crop", "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&h=800&fit=crop"], prompts: [{ q: "The key to my heart is", a: "Fresh calligraphy ink and a good debate about Urdu poetry." }, { q: "My simple pleasures", a: "Canal-side chai at sunset." }] },
-  { phone: "+923002222222", name: "Hamza", age: 30, gender: "MALE", city: "Karachi", intention: "DATING", education: "Software Engineer", bio: "Coffee enthusiast, cricket fan, always up for new food spots.", photos: ["https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&h=800&fit=crop", "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=600&h=800&fit=crop"], prompts: [{ q: "Two truths and a lie", a: "I've watched every Test match this year. I make terrible karahi. I once met Babar Azam." }] },
-  { phone: "+923003333333", name: "Zara", age: 25, gender: "FEMALE", city: "Islamabad", intention: "FRIENDSHIP", education: "Doctor", bio: "Book lover, hiking on weekends, looking to expand my circle.", photos: ["https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=600&h=800&fit=crop"], prompts: [{ q: "Let's talk about", a: "Whatever you're reading right now." }, { q: "Best trail I've hiked", a: "Trail 3, Margalla Hills, at sunrise." }] },
-  { phone: "+923004444444", name: "Bilal", age: 29, gender: "MALE", city: "Lahore", intention: "DATING", education: "Architect", bio: "Design-obsessed, plays the tabla badly but enthusiastically.", photos: ["https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=600&h=800&fit=crop"], prompts: [{ q: "The first item on my bucket list", a: "Sketch every old building in the Walled City." }] },
-  { phone: "+923005555555", name: "Sana", age: 26, gender: "FEMALE", city: "Karachi", intention: "DATING", education: "Marketing Manager", bio: "Beach mornings, terrible karaoke, good playlists.", photos: ["https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=600&h=800&fit=crop"], prompts: [{ q: "My most controversial opinion", a: "Karaoke skill is overrated — confidence is everything." }] },
-  { phone: "+923006666666", name: "Usman", age: 28, gender: "MALE", city: "Islamabad", intention: "FRIENDSHIP", education: "Civil Engineer", bio: "New to the city, looking for people to explore trails with.", photos: ["https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&h=800&fit=crop"], prompts: [{ q: "Let's talk about", a: "Where to find the best trails around Islamabad." }] },
-  { phone: "+923007777777", name: "Mahnoor", age: 24, gender: "FEMALE", city: "Faisalabad", intention: "FRIENDSHIP", education: "Graphic Designer", bio: "Sketchbook always in my bag. Let's talk about movies.", photos: ["https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&h=800&fit=crop"], prompts: [{ q: "Two truths and a lie", a: "I've seen every Miyazaki film. I hate popcorn. I can draw with both hands." }] },
-  { phone: "+923008888888", name: "Ahmed", age: 31, gender: "MALE", city: "Rawalpindi", intention: "DATING", education: "Product Manager", bio: "Weekend cyclist, occasional chef, full-time dog dad.", photos: ["https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=600&h=800&fit=crop"], prompts: [{ q: "My simple pleasures", a: "A long ride, then a nap with my dog." }] },
-  { phone: "+923010101010", name: "Hira", age: 29, gender: "FEMALE", city: "Lahore", intention: "DATING", education: "Lawyer", bio: "Debate club alum. I will out-argue you about pineapple on pizza.", photos: ["https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&h=800&fit=crop"], prompts: [{ q: "My most controversial opinion", a: "Pineapple belongs on pizza. Fight me." }] },
-  { phone: "+923011111111", name: "Danish", age: 27, gender: "MALE", city: "Multan", intention: "DATING", education: "Entrepreneur", bio: "Building a small business, still finding time for cricket on Sundays.", photos: ["https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=600&h=800&fit=crop"], prompts: [{ q: "The first item on my bucket list", a: "Actually take a full weekend off." }] },
-  { phone: "+923012121212", name: "Alina", age: 23, gender: "FEMALE", city: "Peshawar", intention: "FRIENDSHIP", education: "Undergrad, Computer Science", bio: "New here, love board games and finding good chai spots.", photos: ["https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?w=600&h=800&fit=crop"], prompts: [{ q: "Let's talk about", a: "Board game recommendations, I'm building a collection." }] },
-  { phone: "+923013131313", name: "Fahad", age: 32, gender: "MALE", city: "Karachi", intention: "FRIENDSHIP", education: "Doctor", bio: "Long shifts, but always down for a late-night food run.", photos: ["https://images.unsplash.com/photo-1618077360395-f3068be8e001?w=600&h=800&fit=crop"], prompts: [{ q: "My simple pleasures", a: "Food at 2am after a long shift, no judgment." }] },
-];
+require("dotenv").config();
+const prisma = require("../src/config/prisma");
+const { seedDemoProfiles, autoLikeBack, resetSwipesAgainstSeed } = require("../src/services/seedDemoData");
 
 async function main() {
-  await prisma.user.upsert({
-    where: { phone: "+923009999999" },
-    update: { adminRole: "SUPER_ADMIN" },
-    create: { phone: "+923009999999", phoneVerified: true, verificationStatus: "PHONE_VERIFIED", adminRole: "SUPER_ADMIN" },
-  });
-  console.log("Seeded super-admin: +923009999999 (verify via OTP as normal, then it already has admin rights)");
-
-  const seededUserIds = [];
-
-  for (const u of SEED_USERS) {
-    const user = await prisma.user.upsert({
-      where: { phone: u.phone },
-      update: {},
-      create: { phone: u.phone, phoneVerified: true, verificationStatus: "PHONE_VERIFIED" },
-    });
-    seededUserIds.push(user.id);
-
-    const profile = await prisma.profile.upsert({
-      where: { userId: user.id },
-      update: {},
-      create: {
-        userId: user.id,
-        name: u.name,
-        age: u.age,
-        gender: u.gender,
-        city: u.city,
-        intention: u.intention,
-        education: u.education,
-        bio: u.bio,
-        // Unblurred for seed/demo accounts specifically, so the discover
-        // feed looks populated right away without requiring a match first.
-        // Real user-created profiles still default to blurred (see
-        // routes/profile.js / schema default) — this only overrides it here.
-        blurPhotosDefault: false,
-      },
-    });
-
-    const existingPhoto = await prisma.photo.findFirst({ where: { profileId: profile.id } });
-    if (!existingPhoto) {
-      await Promise.all(
-        u.photos.map((url, order) =>
-          prisma.photo.create({
-            data: { profileId: profile.id, url, order, isPrimary: order === 0, moderationStatus: "PASSED" },
-          })
-        )
-      );
-    }
-
-    const existingPrompt = await prisma.profilePrompt.findFirst({ where: { profileId: profile.id } });
-    if (!existingPrompt && u.prompts?.length) {
-      await Promise.all(
-        u.prompts.map((p, order) =>
-          prisma.profilePrompt.create({ data: { profileId: profile.id, question: p.q, answer: p.a, order } })
-        )
-      );
-    }
-  }
-  console.log(`Seeded ${SEED_USERS.length} demo profiles with photos and prompts.`);
+  const { seededCount, seededUserIds } = await seedDemoProfiles();
+  console.log(`Seeded super-admin (+923009999999) and ${seededCount} demo profiles with photos and prompts.`);
 
   // --- Optional: reset YOUR OWN swipe history against just the seed
   // profiles, so you can re-test Discover from scratch without needing a
@@ -84,70 +12,29 @@ async function main() {
   // liked/passed — if you swiped through all the seed profiles in an
   // earlier test session, re-running the seed step above alone won't give
   // you anyone new to see, since it only upserts the same 12 people rather
-  // than creating fresh ones. This clears your MatchAction rows (and any
-  // resulting matches) against seed accounts ONLY — it never touches your
-  // history with real users, since it's scoped to seededUserIds.
+  // than creating fresh ones.
   //
   // Usage: RESET_SWIPES_FOR_PHONE=+923001234567 npm run seed
   // (or RESET_SWIPES_FOR_EMAIL=you@example.com)
   const resetPhone = process.env.RESET_SWIPES_FOR_PHONE;
   const resetEmail = process.env.RESET_SWIPES_FOR_EMAIL;
   if (resetPhone || resetEmail) {
-    const resetUser = await prisma.user.findUnique({
-      where: resetPhone ? { phone: resetPhone } : { email: resetEmail },
-    });
-    if (!resetUser) {
-      console.warn(`RESET_SWIPES target (${resetPhone || resetEmail}) not found — sign up/verify first, then re-run.`);
-    } else {
-      // Revert any MATCHED rows against seed accounts to UNMATCHED first,
-      // then delete the swipe history in both directions.
-      for (const seedId of seededUserIds) {
-        const [userAId, userBId] = [resetUser.id, seedId].sort();
-        const existingMatch = await prisma.match.findUnique({ where: { userAId_userBId: { userAId, userBId } } });
-        if (existingMatch && existingMatch.status === "MATCHED") {
-          await prisma.match.update({ where: { id: existingMatch.id }, data: { status: "UNMATCHED", unmatchedAt: new Date() } });
-        }
-      }
-      const deleted = await prisma.matchAction.deleteMany({
-        where: {
-          OR: [
-            { actorId: resetUser.id, targetId: { in: seededUserIds } },
-            { actorId: { in: seededUserIds }, targetId: resetUser.id },
-          ],
-        },
-      });
-      console.log(`Cleared ${deleted.count} swipe records between ${resetPhone || resetEmail} and the seed profiles — Discover will show them all again.`);
-    }
+    const result = await resetSwipesAgainstSeed(seededUserIds, { phone: resetPhone, email: resetEmail });
+    console.log(result.ok ? result.message : `Warning: ${result.message}`);
   }
 
   // --- Optional: make every seed profile "like" a real account back, so
-  // swiping right on any of them instantly produces a match — useful for
-  // demoing Matches/Chat without waiting on a bot to reciprocate, which
-  // obviously can't happen on its own since these are static accounts.
+  // swiping right on any of them instantly produces a match.
   //
   // Usage: AUTO_LIKE_PHONE=+923001234567 npm run seed
-  // (use the phone number, or AUTO_LIKE_EMAIL=you@example.com if you signed
-  // up via email instead)
-  const targetPhone = process.env.AUTO_LIKE_PHONE;
-  const targetEmail = process.env.AUTO_LIKE_EMAIL;
-  if (targetPhone || targetEmail) {
-    const targetUser = await prisma.user.findUnique({
-      where: targetPhone ? { phone: targetPhone } : { email: targetEmail },
-    });
-    if (!targetUser) {
-      console.warn(`AUTO_LIKE target (${targetPhone || targetEmail}) not found — sign up/verify first, then re-run seed.`);
-    } else {
-      for (const actorId of seededUserIds) {
-        await prisma.matchAction.upsert({
-          where: { actorId_targetId: { actorId, targetId: targetUser.id } },
-          update: { action: "LIKE" },
-          create: { actorId, targetId: targetUser.id, action: "LIKE" },
-        });
-      }
-      console.log(`All ${seededUserIds.length} seed profiles now like ${targetPhone || targetEmail} back — swipe right on any of them for an instant match.`);
-    }
-  } else {
-    console.log("Tip: re-run with AUTO_LIKE_PHONE=<your phone> (or AUTO_LIKE_EMAIL=<your email>) to make seed profiles like you back instantly, so swiping right produces real matches to test chat with.");
+  // (or AUTO_LIKE_EMAIL=you@example.com)
+  const likePhone = process.env.AUTO_LIKE_PHONE;
+  const likeEmail = process.env.AUTO_LIKE_EMAIL;
+  if (likePhone || likeEmail) {
+    const result = await autoLikeBack(seededUserIds, { phone: likePhone, email: likeEmail });
+    console.log(result.ok ? result.message : `Warning: ${result.message}`);
+  } else if (!resetPhone && !resetEmail) {
+    console.log("Tip: re-run with AUTO_LIKE_PHONE=<your phone> (or AUTO_LIKE_EMAIL=<your email>) to make seed profiles like you back instantly.");
   }
 }
 

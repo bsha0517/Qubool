@@ -103,4 +103,35 @@ router.get("/stats", async (req, res) => {
   res.json({ users, verifiedUsers, matches, openReports });
 });
 
+// --- POST /admin/dev/reset-swipes — clear a user's swipe history ---
+// A testing convenience, not a moderation feature: Discover excludes
+// anyone the caller has already liked/passed, and there's no shell access
+// on Render's free tier to run the seed script's RESET_SWIPES env var
+// directly — this does the same thing over HTTP instead, gated behind
+// SUPER_ADMIN so it can't be hit by a regular account.
+//
+// Deletes every MatchAction where the target user is the actor (their own
+// swipes), and reverts any MATCHED rows they're part of to UNMATCHED. Does
+// NOT touch other people's swipes — only clears what this account has done,
+// so it's safe to run against your own test account repeatedly.
+router.post("/dev/reset-swipes", requireRole("SUPER_ADMIN"), async (req, res) => {
+  const { phone, email } = req.body;
+  if (!phone && !email) return res.status(400).json({ error: "Provide phone or email" });
+
+  const target = await prisma.user.findUnique({ where: phone ? { phone } : { email } });
+  if (!target) return res.status(404).json({ error: "No account found for that phone/email" });
+
+  const outgoing = await prisma.matchAction.findMany({ where: { actorId: target.id }, select: { targetId: true } });
+  for (const { targetId } of outgoing) {
+    const [userAId, userBId] = [target.id, targetId].sort();
+    const existingMatch = await prisma.match.findUnique({ where: { userAId_userBId: { userAId, userBId } } });
+    if (existingMatch && existingMatch.status === "MATCHED") {
+      await prisma.match.update({ where: { id: existingMatch.id }, data: { status: "UNMATCHED", unmatchedAt: new Date() } });
+    }
+  }
+
+  const deleted = await prisma.matchAction.deleteMany({ where: { actorId: target.id } });
+  res.json({ message: `Cleared ${deleted.count} swipe records for ${phone || email} — Discover will show everyone again.` });
+});
+
 module.exports = router;

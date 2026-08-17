@@ -17,6 +17,7 @@ const discoverRoutes = require("./routes/discover");
 const matchesRoutes = require("./routes/matches");
 const reportsRoutes = require("./routes/reports");
 const adminRoutes = require("./routes/admin");
+const devRoutes = require("./routes/dev");
 const { router: uploadsRoutes, UPLOAD_DIR } = require("./routes/uploads");
 
 // Redis-backed rate limiting: counters are shared across all API instances
@@ -68,6 +69,16 @@ function createApp(io) {
     message: { error: "Too many attempts — try again later" },
     store: redisStore("rl:pwauth:"),
   });
+  // Very tight limit on the dev seed-trigger route — it's unauthenticated
+  // (checked against a secret inside the handler, not requireAuth) since it
+  // bootstraps the first admin account, so this is the only thing standing
+  // between it and someone brute-forcing SEED_TRIGGER_SECRET.
+  const devSeedLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { error: "Too many attempts — try again later" },
+    store: redisStore("rl:devseed:"),
+  });
 
   app.get("/health", (req, res) => res.json({ status: "ok" }));
 
@@ -80,6 +91,8 @@ function createApp(io) {
   app.use("/matches", matchesRoutes);
   app.use("/reports", reportsRoutes);
   app.use("/admin", adminRoutes);
+  app.use("/dev/seed", devSeedLimiter);
+  app.use("/dev", devRoutes);
   app.use("/uploads", uploadsRoutes);
   // Serves files written by the local-disk dev upload fallback (see
   // services/uploads.js) — only ever populated when AWS isn't configured.

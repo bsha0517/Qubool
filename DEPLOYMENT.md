@@ -104,15 +104,39 @@ Deploy the databases first, then the backend, then the frontend.
    your Supabase database gets its schema set up on first deploy.
 6. Once it's live, copy the public URL Render gives you (something like
    `https://dosti-api.onrender.com`) — you'll need it for the frontend.
-7. (Optional) Seed sample profiles once: **Shell** tab on the Render
-   service → `npm run seed`. Re-run with `AUTO_LIKE_PHONE=<your phone> npm run seed`
-   afterward (once you've signed up in the app) so the seed profiles like
-   you back — matches need mutual likes, and static seed accounts can't
-   reciprocate on their own otherwise. If Discover ever shows an empty
-   "That's today's batch" state, it means you've already swiped through
-   all the seed profiles — reset your history with them specifically via
-   `RESET_SWIPES_FOR_PHONE=<your phone> npm run seed` (safe — only affects
-   your history with the seed accounts, never real users).
+7. (Optional) Seed sample profiles. **Render's free tier has no Shell tab**
+   (that's a paid-plan feature), so use the HTTP-based option instead:
+   - Add one more environment variable: `SEED_TRIGGER_SECRET` — set it to
+     any long random string.
+   - Redeploy (Render redeploys automatically when you save an env var change).
+   - Trigger it with curl:
+     ```bash
+     curl -X POST https://dosti-api.onrender.com/dev/seed \
+       -H "X-Seed-Secret: <the secret you just set>" \
+       -H "Content-Type: application/json" \
+       -d '{}'
+     ```
+     This creates the super-admin account and 12 demo profiles.
+   - Once you've signed up in the app yourself, call it again with your
+     phone/email so the seed profiles like you back (matches need mutual
+     likes, and static seed accounts can't reciprocate on their own):
+     ```bash
+     curl -X POST https://dosti-api.onrender.com/dev/seed \
+       -H "X-Seed-Secret: <the secret you just set>" \
+       -H "Content-Type: application/json" \
+       -d '{"autoLikePhone": "+923001234567"}'
+     ```
+   - If Discover ever shows an empty "That's today's batch" state, it means
+     you've already swiped through all the seed profiles — reset your
+     history with them specifically (safe, never touches real users):
+     ```bash
+     curl -X POST https://dosti-api.onrender.com/dev/seed \
+       -H "X-Seed-Secret: <the secret you just set>" \
+       -H "Content-Type: application/json" \
+       -d '{"resetSwipesPhone": "+923001234567"}'
+     ```
+   - Full details, including the shell-based `npm run seed` equivalent for
+     hosts that do give you one, are in `backend/README.md`.
 
 ### Note on Render's free tier
 

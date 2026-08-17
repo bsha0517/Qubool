@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: qubool-api
+    name: dosti-api
     runtime: docker
     rootDir: backend
     dockerfilePath: ./Dockerfile
@@ -18,8 +18,10 @@ services:
         value: production
       - key: CORS_ORIGIN
         sync: false # set this to your Vercel frontend URL after it's deployed
+      - key: SEED_TRIGGER_SECRET
+        generateValue: true # enables POST /dev/seed — see backend/README.md "Seeding without shell access"
     # After the service is created, add the remaining vars from
-    # backend/.env.example (Twilio, AWS, KYC provider, etc.) in the Render
+    # backend/.env.example (Twilio, AWS, moderation API, etc.) in the Render
     # dashboard — they're intentionally left out here since they're optional
     # dev-fallback-friendly credentials, not required to boot the service.
     #
@@ -31,6 +33,6 @@ services:
     # below and switch the two envVars above to fromDatabase/fromService.
 
 # databases:
-#   - name: qubool-postgres
+#   - name: dosti-postgres
 #     plan: free
 

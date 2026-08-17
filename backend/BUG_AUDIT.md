@@ -180,3 +180,23 @@ already applied in this codebase.
   `WHERE` clause; bidirectional filtering means checking the candidate's
   preferences against the viewer too) that felt like scope creep for a
   first pass at this feature.
+
+## Fixed: seeding required shell access that not every host provides
+
+The original `npm run seed` instructions assumed a shell was available
+(Docker exec, or Render's Shell tab) — but Render's **free** tier doesn't
+include shell access at all, which meant seeding (and the reset-swipes/
+auto-like helpers built on top of it) was simply unusable there. This also
+meant the super-admin account — created by the seed step itself — could
+never come into existence on that tier, so gating a fix behind "log in as
+admin and call an endpoint" wouldn't have worked either (chicken-and-egg).
+
+Fixed by extracting the seeding logic out of `prisma/seed.js` into
+`src/services/seedDemoData.js`, callable from both:
+- The original CLI script (`npm run seed`, unchanged behavior, still needs
+  a shell — fine for Docker/local dev)
+- A new `POST /dev/seed` HTTP endpoint (`src/routes/dev.js`), protected by
+  a shared secret (`SEED_TRIGGER_SECRET`) rather than `requireAuth`/admin
+  role, specifically because no admin account exists before this runs the
+  first time. The route 404s entirely unless that env var is explicitly
+  set, and is rate-limited (5/15min) since it's reachable pre-auth.
